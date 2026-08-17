@@ -13,6 +13,20 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <!-- Lucide React UMD -->
   <script src="https://unpkg.com/lucide-react@0.344.0/dist/umd/lucide-react.min.js"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      .print-show { display: block !important; }
+      body { background: #fff !important; color: #111 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      header, nav { display: none !important; }
+      .print-team-page { page-break-after: always; padding: 20px 32px; }
+      .print-team-page:last-child { page-break-after: avoid; }
+    }
+    .print-show { display: none; }
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
   <div id="root"></div>
@@ -66,6 +80,13 @@
     const FileImage = lucideObj.FileImage || lucideObj.Image || createIcon(<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/></>);
     const CheckSquare = lucideObj.CheckSquare || createIcon(<><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>);
     const Square = lucideObj.Square || createIcon(<rect width="18" height="18" x="3" y="3" rx="2"/>);
+    const Upload = lucideObj.Upload || createIcon(<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>);
+    const Undo2 = lucideObj.Undo2 || createIcon(<><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></>);
+    const Redo2 = lucideObj.Redo2 || createIcon(<><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/></>);
+    const Printer = lucideObj.Printer || createIcon(<><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></>);
+    const AlertTriangle = lucideObj.AlertTriangle || createIcon(<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>);
+    const BookOpen = lucideObj.BookOpen || createIcon(<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3-3h7z"/></>);
+    const ImageIcon = lucideObj.Image || createIcon(<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></>);
 
     // --- INITIAL LEAGUE DATA (SORTED ALPHABETICALLY BY TEAM NAME) ---
     const INITIAL_LEAGUE_DATA = {
@@ -347,6 +368,73 @@
       );
     }
 
+    function hexToHsl(hex) {
+      const { r, g, b } = hexToRgb(hex);
+      const rN = r / 255, gN = g / 255, bN = b / 255;
+      const max = Math.max(rN, gN, bN), min = Math.min(rN, gN, bN);
+      const l = (max + min) / 2;
+      let h = 0, s = 0;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case rN: h = ((gN - bN) / d + (gN < bN ? 6 : 0)) / 6; break;
+          case gN: h = ((bN - rN) / d + 2) / 6; break;
+          case bN: h = ((rN - gN) / d + 4) / 6; break;
+        }
+      }
+      return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+    }
+
+    async function extractColorsFromImage(file, numColors = 6) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const size = 80;
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = size; offCanvas.height = size;
+            const ctx = offCanvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, size, size);
+            const data = ctx.getImageData(0, 0, size, size).data;
+            const pixels = [];
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+              if (a < 128) continue;
+              const br = (r + g + b) / 3;
+              if (br > 242 || br < 12) continue;
+              pixels.push([r, g, b]);
+            }
+            if (!pixels.length) { resolve([]); return; }
+            const k = Math.min(numColors, pixels.length);
+            let cents = Array.from({ length: k }, (_, i) => [...pixels[Math.floor(i * pixels.length / k)]]);
+            for (let iter = 0; iter < 12; iter++) {
+              const clusters = Array.from({ length: k }, () => []);
+              for (const px of pixels) {
+                let best = 0, bestD = Infinity;
+                for (let ci = 0; ci < k; ci++) {
+                  const d = (px[0]-cents[ci][0])**2 + (px[1]-cents[ci][1])**2 + (px[2]-cents[ci][2])**2;
+                  if (d < bestD) { bestD = d; best = ci; }
+                }
+                clusters[best].push(px);
+              }
+              cents = clusters.map((cl, ci) => {
+                if (!cl.length) return cents[ci];
+                const s = cl.reduce((a, p) => [a[0]+p[0], a[1]+p[1], a[2]+p[2]], [0,0,0]);
+                return [Math.round(s[0]/cl.length), Math.round(s[1]/cl.length), Math.round(s[2]/cl.length)];
+              });
+            }
+            resolve(cents.map(([r,g,b]) => rgbToHex(r,g,b)));
+          };
+          img.onerror = () => resolve([]);
+          img.src = ev.target.result;
+        };
+        reader.onerror = () => resolve([]);
+        reader.readAsDataURL(file);
+      });
+    }
+
     // --- CANVAS DRAWING HELPERS ---
     function drawRoundedRect(ctx, x, y, width, height, radius, fill = true, stroke = false, fillColor = '#000', strokeColor = '#333') {
       ctx.save();
@@ -395,11 +483,40 @@
 
     // --- MAIN APP COMPONENT ---
     function App() {
-      const [teams, setTeams] = useState(INITIAL_LEAGUE_DATA.teams);
-      const [activeTab, setActiveTab] = useState('teams'); // 'teams', 'spectrum', 'compare', 'export-image', 'export'
+      // --- CORE TEAM STATE (persisted to localStorage) ---
+      const [teams, setTeams] = useState(() => {
+        try {
+          const saved = localStorage.getItem('trl-studio-teams');
+          if (saved) return JSON.parse(saved);
+        } catch {}
+        return INITIAL_LEAGUE_DATA.teams;
+      });
+
+      const [activeTab, setActiveTab] = useState('teams'); // 'teams', 'spectrum', 'compare', 'export-image', 'export', 'accessibility'
       const [searchQuery, setSearchQuery] = useState('');
       const [selectedTeamId, setSelectedTeamId] = useState(null);
       const [toastMessage, setToastMessage] = useState(null);
+
+      // --- TEAM LOGOS (persisted to localStorage, base64 dataURLs) ---
+      const [teamLogos, setTeamLogos] = useState(() => {
+        try {
+          const saved = localStorage.getItem('trl-studio-logos');
+          if (saved) return JSON.parse(saved);
+        } catch {}
+        return {};
+      });
+
+      // --- UNDO / REDO per modal session ---
+      const [undoState, setUndoState] = useState({ stack: [], index: -1 });
+
+      // --- IMAGE EXTRACTION STATE ---
+      const [imgExtract, setImgExtract] = useState(null); // null | { teamId, loading, colors }
+
+      // --- CONFIRM RESET ALL DIALOG ---
+      const [confirmResetAll, setConfirmResetAll] = useState(false);
+
+      // --- EXPORT CODE SUB-TAB ---
+      const [exportCodeTab, setExportCodeTab] = useState('css'); // 'css', 'tailwind', 'scss', 'json'
 
       // Drag and Drop state inside Modal
       const [draggedIdx, setDraggedIdx] = useState(null);
@@ -432,10 +549,53 @@
       const [exportScale, setExportScale] = useState(2); // 1, 2, 3
       const [exportTitle, setExportTitle] = useState('TRL Team Color Guidelines');
       const [exportSubtitle, setExportSubtitle] = useState('Official Color Systems & Format Reference');
-      
-      const canvasRef = useRef(null);
 
-      // Clipboard Copier
+      const canvasRef = useRef(null);
+      const importJsonRef = useRef(null);
+      const logoInputRef = useRef(null);
+      const imgExtractRef = useRef(null);
+      const teamsRef = useRef(teams);
+      useEffect(() => { teamsRef.current = teams; }, [teams]);
+
+      // --- PERSIST TEAMS TO LOCALSTORAGE ---
+      useEffect(() => {
+        try { localStorage.setItem('trl-studio-teams', JSON.stringify(teams)); } catch {}
+      }, [teams]);
+
+      // --- PERSIST LOGOS TO LOCALSTORAGE ---
+      useEffect(() => {
+        try { localStorage.setItem('trl-studio-logos', JSON.stringify(teamLogos)); } catch {}
+      }, [teamLogos]);
+
+      // --- INIT UNDO STACK WHEN MODAL OPENS ---
+      useEffect(() => {
+        if (selectedTeamId) {
+          const t = teams.find(t => t.id === selectedTeamId);
+          if (t) setUndoState({ stack: [JSON.parse(JSON.stringify(t.colors))], index: 0 });
+        } else {
+          setUndoState({ stack: [], index: -1 });
+          setImgExtract(null);
+        }
+      }, [selectedTeamId]); // eslint-disable-line
+
+      // --- KEYBOARD SHORTCUTS: UNDO / REDO in modal ---
+      useEffect(() => {
+        if (!selectedTeamId) return;
+        const handler = (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            handleUndo();
+          }
+          if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+            e.preventDefault();
+            handleRedo();
+          }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+      }, [selectedTeamId]); // eslint-disable-line
+
+      // --- CLIPBOARD COPIER ---
       const handleCopy = useCallback((text, label = 'Color') => {
         try {
           if (navigator.clipboard && window.isSecureContext) {
@@ -459,19 +619,61 @@
         }
       }, []);
 
+      // --- UNDO / REDO HELPERS ---
+      const pushUndo = useCallback((newColors) => {
+        setUndoState(prev => {
+          const past = prev.stack.slice(0, prev.index + 1);
+          const next = [...past, JSON.parse(JSON.stringify(newColors))].slice(-20);
+          return { stack: next, index: next.length - 1 };
+        });
+      }, []);
+
+      const handleUndo = useCallback(() => {
+        setUndoState(prev => {
+          if (prev.index <= 0) return prev;
+          const newIndex = prev.index - 1;
+          const targetColors = prev.stack[newIndex];
+          setTeams(prevTeams => prevTeams.map(t =>
+            t.id === selectedTeamId ? { ...t, colors: JSON.parse(JSON.stringify(targetColors)) } : t
+          ));
+          return { ...prev, index: newIndex };
+        });
+      }, [selectedTeamId]);
+
+      const handleRedo = useCallback(() => {
+        setUndoState(prev => {
+          if (prev.index >= prev.stack.length - 1) return prev;
+          const newIndex = prev.index + 1;
+          const targetColors = prev.stack[newIndex];
+          setTeams(prevTeams => prevTeams.map(t =>
+            t.id === selectedTeamId ? { ...t, colors: JSON.parse(JSON.stringify(targetColors)) } : t
+          ));
+          return { ...prev, index: newIndex };
+        });
+      }, [selectedTeamId]);
+
+      // Commit a new undo checkpoint from current live state (call on blur/mouseup)
+      const handleCommitUndo = useCallback((teamId) => {
+        const t = teamsRef.current.find(t => t.id === teamId);
+        if (t) pushUndo(t.colors);
+      }, [pushUndo]);
+
       // Move Color Card Position
       const handleMoveColor = useCallback((teamId, fromIdx, toIdx) => {
-        setTeams(prevTeams =>
-          prevTeams.map(t => {
+        setTeams(prevTeams => {
+          const next = prevTeams.map(t => {
             if (t.id !== teamId) return t;
             if (toIdx < 0 || toIdx >= t.colors.length) return t;
             const updatedColors = [...t.colors];
             const [movedItem] = updatedColors.splice(fromIdx, 1);
             updatedColors.splice(toIdx, 0, movedItem);
             return { ...t, colors: updatedColors };
-          })
-        );
-      }, []);
+          });
+          const movedTeam = next.find(t => t.id === teamId);
+          if (movedTeam) pushUndo(movedTeam.colors);
+          return next;
+        });
+      }, [pushUndo]);
 
       // Update Color in Team Palette
       const handleUpdateColor = (teamId, colorId, key, value) => {
@@ -498,9 +700,11 @@
       const handleResetTeam = (teamId) => {
         const origTeam = INITIAL_LEAGUE_DATA.teams.find(t => t.id === teamId);
         if (!origTeam) return;
+        const resetColors = JSON.parse(JSON.stringify(origTeam.colors));
         setTeams(prevTeams =>
-          prevTeams.map(t => (t.id === teamId ? JSON.parse(JSON.stringify(origTeam)) : t))
+          prevTeams.map(t => (t.id === teamId ? { ...t, colors: resetColors } : t))
         );
+        pushUndo(resetColors);
         setToastMessage(`Reset ${origTeam.team} to default TRL colors`);
         setTimeout(() => setToastMessage(null), 2500);
       };
@@ -508,39 +712,126 @@
       // Reset All Teams
       const handleResetAll = () => {
         setTeams(JSON.parse(JSON.stringify(INITIAL_LEAGUE_DATA.teams)));
-        setToastMessage('Reset all team palettes to TRL defaults');
+        setTeamLogos({});
+        setConfirmResetAll(false);
+        setToastMessage('Reset all team palettes and logos to TRL defaults');
         setTimeout(() => setToastMessage(null), 2500);
       };
 
       // Add Custom Color to Team
       const handleAddColor = (teamId) => {
-        setTeams(prevTeams =>
-          prevTeams.map(t => {
+        setTeams(prevTeams => {
+          const next = prevTeams.map(t => {
             if (t.id !== teamId) return t;
             const newId = `${teamId}-custom-${Date.now()}`;
             return {
               ...t,
-              colors: [
-                ...t.colors,
-                { id: newId, name: `Custom Color ${t.colors.length + 1}`, hex: '#3B82F6' }
-              ]
+              colors: [...t.colors, { id: newId, name: `Custom Color ${t.colors.length + 1}`, hex: '#3B82F6' }]
             };
-          })
-        );
+          });
+          const updatedTeam = next.find(t => t.id === teamId);
+          if (updatedTeam) pushUndo(updatedTeam.colors);
+          return next;
+        });
       };
 
       // Delete Color from Team
       const handleDeleteColor = (teamId, colorId) => {
-        setTeams(prevTeams =>
-          prevTeams.map(t => {
+        setTeams(prevTeams => {
+          const next = prevTeams.map(t => {
             if (t.id !== teamId) return t;
             if (t.colors.length <= 2) return t;
-            return {
-              ...t,
-              colors: t.colors.filter(c => c.id !== colorId)
-            };
-          })
-        );
+            return { ...t, colors: t.colors.filter(c => c.id !== colorId) };
+          });
+          const updatedTeam = next.find(t => t.id === teamId);
+          if (updatedTeam) pushUndo(updatedTeam.colors);
+          return next;
+        });
+      };
+
+      // --- LOGO UPLOAD ---
+      const handleLogoUpload = (teamId, file) => {
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setTeamLogos(prev => ({ ...prev, [teamId]: ev.target.result }));
+          setToastMessage('Team logo saved!');
+          setTimeout(() => setToastMessage(null), 2000);
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handleRemoveLogo = (teamId) => {
+        setTeamLogos(prev => { const n = { ...prev }; delete n[teamId]; return n; });
+      };
+
+      // --- JSON EXPORT / IMPORT ---
+      const handleExportJSON = () => {
+        const payload = {
+          league: INITIAL_LEAGUE_DATA.league,
+          exportedAt: new Date().toISOString(),
+          teams: teams.map(t => ({
+            ...t,
+            logo: teamLogos[t.id] || null
+          }))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'trl-league-colors.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setToastMessage('Exported trl-league-colors.json');
+        setTimeout(() => setToastMessage(null), 2500);
+      };
+
+      const handleImportJSON = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (!data.teams || !Array.isArray(data.teams)) throw new Error('Invalid format');
+            const importedTeams = data.teams.map(t => ({
+              id: t.id, team: t.team, note: t.note || null,
+              colors: (t.colors || []).map(c => ({ id: c.id, name: c.name, hex: c.hex }))
+            }));
+            const importedLogos = {};
+            data.teams.forEach(t => { if (t.logo) importedLogos[t.id] = t.logo; });
+            setTeams(importedTeams);
+            setTeamLogos(importedLogos);
+            setToastMessage('League data imported successfully!');
+            setTimeout(() => setToastMessage(null), 2500);
+          } catch {
+            setToastMessage('Import failed — invalid JSON format');
+            setTimeout(() => setToastMessage(null), 3000);
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      // --- PRINT MEDIA GUIDE ---
+      const handlePrint = () => {
+        window.print();
+      };
+
+      // --- IMAGE EXTRACTION ---
+      const handleExtractFromImage = async (teamId, file) => {
+        if (!file) return;
+        setImgExtract({ teamId, loading: true, colors: [] });
+        const colors = await extractColorsFromImage(file, 6);
+        setImgExtract({ teamId, loading: false, colors });
+      };
+
+      const handleApplyExtractedColor = (teamId, colorId, hex) => {
+        handleUpdateColor(teamId, colorId, 'hex', hex);
+        handleCommitUndo(teamId);
+        setImgExtract(null);
+        setToastMessage('Extracted color applied!');
+        setTimeout(() => setToastMessage(null), 2000);
       };
 
       // Filtered Teams for Grid
@@ -1019,7 +1310,7 @@
                 </div>
 
                 <button
-                  onClick={handleResetAll}
+                  onClick={() => setConfirmResetAll(true)}
                   className="md:hidden p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
                   title="Reset All Palettes"
                 >
@@ -1088,17 +1379,92 @@
                   <Download className="w-4 h-4" />
                   <span>Export Code</span>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('accessibility')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'accessibility'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Accessibility</span>
+                </button>
               </div>
 
-              <button
-                onClick={handleResetAll}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Reset All Defaults</span>
-              </button>
+              <div className="hidden md:flex items-center gap-2">
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
+                  title="Print / Save as PDF Media Guide"
+                >
+                  <Printer className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Print Guide</span>
+                </button>
+                <button
+                  onClick={handleExportJSON}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
+                  title="Export League Data as JSON"
+                >
+                  <Download className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Export JSON</span>
+                </button>
+                <label
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition cursor-pointer"
+                  title="Import League Data from JSON"
+                >
+                  <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Import JSON</span>
+                  <input
+                    ref={importJsonRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={e => { handleImportJSON(e.target.files[0]); e.target.value = ''; }}
+                  />
+                </label>
+                <button
+                  onClick={() => setConfirmResetAll(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Reset All</span>
+                </button>
+              </div>
             </div>
           </header>
+
+          {/* Confirm Reset All Dialog */}
+          {confirmResetAll && (
+            <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5 text-rose-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">Reset All to Defaults?</h3>
+                    <p className="text-xs text-slate-400">This will erase all color edits and logos.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setConfirmResetAll(false)}
+                    className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleResetAll}
+                    className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition"
+                  >
+                    Yes, Reset All
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main Container */}
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1144,8 +1510,11 @@
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 group-hover:border-cyan-500/40 transition">
-                                <Shield className="w-4 h-4 text-cyan-400" />
+                              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 group-hover:border-cyan-500/40 transition overflow-hidden">
+                                {teamLogos[team.id]
+                                  ? <img src={teamLogos[team.id]} alt="" className="w-full h-full object-cover" />
+                                  : <Shield className="w-4 h-4 text-cyan-400" />
+                                }
                               </div>
                               <div>
                                 <h2 className="font-bold text-slate-100 text-lg group-hover:text-cyan-400 transition">
@@ -1277,19 +1646,60 @@
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-8 my-auto relative">
                   <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                        <Shield className="w-6 h-6" />
-                      </div>
+                      {/* Logo area — click to upload */}
+                      <label className="w-12 h-12 rounded-2xl border border-cyan-500/30 flex items-center justify-center text-cyan-400 overflow-hidden cursor-pointer hover:border-cyan-400 transition relative group/logo" title="Click to upload team logo">
+                        {teamLogos[selectedTeam.id]
+                          ? <img src={teamLogos[selectedTeam.id]} alt="" className="w-full h-full object-cover" />
+                          : <div className="bg-gradient-to-br from-cyan-500/20 to-blue-600/20 w-full h-full flex items-center justify-center">
+                              <Shield className="w-6 h-6" />
+                            </div>
+                        }
+                        <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition">
+                          <Upload className="w-4 h-4 text-white" />
+                        </div>
+                        <input
+                          type="file" accept="image/*" className="hidden"
+                          onChange={e => { handleLogoUpload(selectedTeam.id, e.target.files[0]); e.target.value = ''; }}
+                        />
+                      </label>
                       <div>
                         <h2 className="text-2xl font-black text-white tracking-tight">{selectedTeam.team}</h2>
                         <p className="text-xs text-slate-400">
                           Move & Tune Palette • {selectedTeam.colors.length} Active Swatches
                           {selectedTeam.note && <span className="text-amber-400 ml-2">({selectedTeam.note})</span>}
                         </p>
+                        {teamLogos[selectedTeam.id] && (
+                          <button
+                            onClick={() => handleRemoveLogo(selectedTeam.id)}
+                            className="text-[10px] text-rose-400 hover:text-rose-300 mt-0.5"
+                          >
+                            Remove logo
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {/* Undo / Redo */}
+                      <div className="flex items-center gap-1 bg-slate-950 rounded-xl border border-slate-800 p-1">
+                        <button
+                          onClick={handleUndo}
+                          disabled={undoState.index <= 0}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition"
+                          title="Undo (⌘Z)"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={handleRedo}
+                          disabled={undoState.index >= undoState.stack.length - 1}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition"
+                          title="Redo (⌘⇧Z)"
+                        >
+                          <Redo2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
                       <button
                         onClick={() => handleOpenImageExportForTeam(selectedTeam.id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-semibold border border-cyan-500/30 transition"
@@ -1438,6 +1848,7 @@
                                     onChange={e =>
                                       handleUpdateColor(selectedTeam.id, color.id, 'name', e.target.value)
                                     }
+                                    onBlur={() => handleCommitUndo(selectedTeam.id)}
                                     className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs font-semibold text-white focus:outline-none focus:border-cyan-500"
                                     placeholder="Color Name"
                                   />
@@ -1453,6 +1864,7 @@
                                     onChange={e =>
                                       handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
                                     }
+                                    onBlur={() => handleCommitUndo(selectedTeam.id)}
                                     className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-0.5 text-xs font-mono text-cyan-400 focus:outline-none focus:border-cyan-500"
                                   />
 
@@ -1470,7 +1882,8 @@
                             </div>
 
                             {/* Quick Format Copy Strip */}
-                            <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800/60">
+                            {(() => { const hsl = hexToHsl(color.hex); return (
+                            <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-800/60">
                               <button
                                 onClick={() => handleCopy(color.hex, 'HEX')}
                                 className="bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-300 py-1 rounded text-center truncate border border-slate-800"
@@ -1484,12 +1897,19 @@
                                 RGB: {rgb.r},{rgb.g},{rgb.b}
                               </button>
                               <button
+                                onClick={() => handleCopy(`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`, 'HSL')}
+                                className="bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-300 py-1 rounded text-center truncate border border-slate-800"
+                              >
+                                HSL: {hsl.h}°,{hsl.s}%,{hsl.l}%
+                              </button>
+                              <button
                                 onClick={() => handleCopy(`hsb(${hsb.h}, ${hsb.s}%, ${hsb.b}%)`, 'HSB')}
                                 className="bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-300 py-1 rounded text-center truncate border border-slate-800"
                               >
                                 HSB: {hsb.h}°,{hsb.s}%,{hsb.b}%
                               </button>
                             </div>
+                            ); })()}
 
                             {/* HSB Tuning Sliders */}
                             <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-[10px]">
@@ -1504,13 +1924,10 @@
                                   value={hsb.h}
                                   onChange={e => {
                                     const newRgb = hsbToRgb(parseInt(e.target.value), hsb.s, hsb.b);
-                                    handleUpdateColor(
-                                      selectedTeam.id,
-                                      color.id,
-                                      'hex',
-                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
-                                    );
+                                    handleUpdateColor(selectedTeam.id, color.id, 'hex', rgbToHex(newRgb.r, newRgb.g, newRgb.b));
                                   }}
+                                  onMouseUp={() => handleCommitUndo(selectedTeam.id)}
+                                  onTouchEnd={() => handleCommitUndo(selectedTeam.id)}
                                   className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
                                 />
                               </div>
@@ -1526,13 +1943,10 @@
                                   value={hsb.s}
                                   onChange={e => {
                                     const newRgb = hsbToRgb(hsb.h, parseInt(e.target.value), hsb.b);
-                                    handleUpdateColor(
-                                      selectedTeam.id,
-                                      color.id,
-                                      'hex',
-                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
-                                    );
+                                    handleUpdateColor(selectedTeam.id, color.id, 'hex', rgbToHex(newRgb.r, newRgb.g, newRgb.b));
                                   }}
+                                  onMouseUp={() => handleCommitUndo(selectedTeam.id)}
+                                  onTouchEnd={() => handleCommitUndo(selectedTeam.id)}
                                   className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
                                 />
                               </div>
@@ -1548,13 +1962,10 @@
                                   value={hsb.b}
                                   onChange={e => {
                                     const newRgb = hsbToRgb(hsb.h, hsb.s, parseInt(e.target.value));
-                                    handleUpdateColor(
-                                      selectedTeam.id,
-                                      color.id,
-                                      'hex',
-                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
-                                    );
+                                    handleUpdateColor(selectedTeam.id, color.id, 'hex', rgbToHex(newRgb.r, newRgb.g, newRgb.b));
                                   }}
+                                  onMouseUp={() => handleCommitUndo(selectedTeam.id)}
+                                  onTouchEnd={() => handleCommitUndo(selectedTeam.id)}
                                   className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
                                 />
                               </div>
@@ -1563,6 +1974,70 @@
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* Image Color Extraction */}
+                  <div className="pt-4 border-t border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-cyan-400" />
+                        Extract Colors from Image
+                      </h3>
+                      <label className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-medium px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 cursor-pointer">
+                        <Upload className="w-3.5 h-3.5" />
+                        {imgExtract?.loading ? 'Analyzing…' : 'Upload Image'}
+                        <input
+                          ref={imgExtractRef}
+                          type="file" accept="image/*" className="hidden"
+                          onChange={e => { handleExtractFromImage(selectedTeam.id, e.target.files[0]); e.target.value = ''; }}
+                          disabled={imgExtract?.loading}
+                        />
+                      </label>
+                    </div>
+
+                    {imgExtract && imgExtract.teamId === selectedTeam.id && !imgExtract.loading && imgExtract.colors.length > 0 && (
+                      <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 space-y-3">
+                        <p className="text-xs text-slate-400">Click a color below to apply it to any palette slot, or drag it to a slot.</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {imgExtract.colors.map((hex, i) => {
+                            const hsl = hexToHsl(hex);
+                            return (
+                              <div key={i} className="relative group/ec">
+                                <div
+                                  className="w-12 h-12 rounded-xl border-2 border-slate-700 shadow cursor-pointer hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: hex }}
+                                  title={hex}
+                                />
+                                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-mono text-slate-400 whitespace-nowrap">{hex}</span>
+                                {/* Apply dropdown */}
+                                <div className="absolute bottom-14 left-0 z-10 hidden group-hover/ec:flex flex-col bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden min-w-[140px]">
+                                  <p className="text-[10px] text-slate-400 px-3 pt-2 pb-1 font-semibold">Apply to slot:</p>
+                                  {selectedTeam.colors.map((c, ci) => (
+                                    <button
+                                      key={c.id}
+                                      onClick={() => handleApplyExtractedColor(selectedTeam.id, c.id, hex)}
+                                      className="text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex items-center gap-2 transition"
+                                    >
+                                      <div className="w-3.5 h-3.5 rounded shrink-0" style={{ backgroundColor: c.hex }} />
+                                      <span className="truncate">{c.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={() => setImgExtract(null)}
+                          className="text-xs text-slate-500 hover:text-slate-300 transition"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    )}
+                    {imgExtract?.loading && (
+                      <div className="text-xs text-slate-400 animate-pulse">Analyzing image colors…</div>
+                    )}
                   </div>
 
                   {/* Live Team Mockups */}
@@ -1927,6 +2402,48 @@
                       </p>
                     </div>
                   </div>
+
+                  {/* WCAG Contrast Analysis */}
+                  {(() => {
+                    const ratioAB = getContrastRatio(compareColorA.hex, compareColorB.hex);
+                    const ratioAW = getContrastRatio(compareColorA.hex, '#FFFFFF');
+                    const ratioAD = getContrastRatio(compareColorA.hex, '#111827');
+                    const ratioBW = getContrastRatio(compareColorB.hex, '#FFFFFF');
+                    const ratioBD = getContrastRatio(compareColorB.hex, '#111827');
+                    const badge = (ratio) => {
+                      const r = parseFloat(ratio);
+                      if (r >= 7) return { label: 'AAA', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
+                      if (r >= 4.5) return { label: 'AA', cls: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' };
+                      if (r >= 3) return { label: 'AA Large', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+                      return { label: 'Fail', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/30' };
+                    };
+                    const Row = ({ label, ratio }) => {
+                      const { label: bl, cls } = badge(ratio);
+                      return (
+                        <div className="flex items-center justify-between py-1.5 border-b border-slate-800/60 last:border-0 text-xs">
+                          <span className="text-slate-400">{label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-white">{ratio.toFixed(2)}:1</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${cls}`}>{bl}</span>
+                          </div>
+                        </div>
+                      );
+                    };
+                    return (
+                      <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 space-y-1">
+                        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4 text-cyan-400" />
+                          WCAG 2.1 Contrast Analysis
+                        </h3>
+                        <Row label="A vs B (direct pair)" ratio={ratioAB} />
+                        <Row label="Color A on White" ratio={ratioAW} />
+                        <Row label="Color A on Dark" ratio={ratioAD} />
+                        <Row label="Color B on White" ratio={ratioBW} />
+                        <Row label="Color B on Dark" ratio={ratioBD} />
+                        <p className="text-[10px] text-slate-500 pt-2">AA = 4.5:1 (normal text) • AA Large = 3:1 (large text/UI) • AAA = 7:1</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -2236,108 +2753,316 @@
             {activeTab === 'export' && (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div className="bg-slate-900/60 p-6 rounded-3xl border border-slate-800 space-y-6">
-                  <div>
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Download className="w-5 h-5 text-cyan-400" />
+                        League Palette Code Exporter
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        Export TRL color systems into CSS variables, Tailwind config, SCSS variables, or raw JSON.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Sub-tab switcher */}
+                  <div className="flex gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 w-fit">
+                    {[
+                      { id: 'css', label: 'CSS Vars' },
+                      { id: 'tailwind', label: 'Tailwind' },
+                      { id: 'scss', label: 'SCSS' },
+                      { id: 'json', label: 'JSON' },
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setExportCodeTab(tab.id)}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
+                          exportCodeTab === tab.id
+                            ? 'bg-cyan-500 text-slate-950'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* CSS Variables */}
+                  {exportCodeTab === 'css' && (() => {
+                    const cssCode = teams.map(t =>
+                      `/* ${t.team} */\n` +
+                      t.colors.map(c => `--trl-${t.id}-${c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}: ${c.hex};`).join('\n')
+                    ).join('\n\n');
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-300">CSS Custom Properties (--variables)</span>
+                          <button onClick={() => handleCopy(cssCode, 'CSS Variables')} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20">
+                            <Copy className="w-3.5 h-3.5" /> Copy CSS Code
+                          </button>
+                        </div>
+                        <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-96 scrollbar-thin">{cssCode}</pre>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Tailwind */}
+                  {exportCodeTab === 'tailwind' && (() => {
+                    const twObj = teams.reduce((acc, t) => {
+                      acc[t.id] = t.colors.reduce((cAcc, c) => { cAcc[c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')] = c.hex; return cAcc; }, {});
+                      return acc;
+                    }, {});
+                    const twCode = JSON.stringify({ theme: { extend: { colors: twObj } } }, null, 2);
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-300">Tailwind CSS Color Config Object</span>
+                          <button onClick={() => handleCopy(twCode, 'Tailwind Config')} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20">
+                            <Copy className="w-3.5 h-3.5" /> Copy Tailwind Config
+                          </button>
+                        </div>
+                        <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-96 scrollbar-thin">{twCode}</pre>
+                      </div>
+                    );
+                  })()}
+
+                  {/* SCSS */}
+                  {exportCodeTab === 'scss' && (() => {
+                    const scssCode = teams.map(t =>
+                      `// ${t.team}\n` +
+                      t.colors.map(c => `$trl-${t.id}-${c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}: ${c.hex};`).join('\n')
+                    ).join('\n\n');
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-300">SCSS Variables ($variables)</span>
+                          <button onClick={() => handleCopy(scssCode, 'SCSS Variables')} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20">
+                            <Copy className="w-3.5 h-3.5" /> Copy SCSS
+                          </button>
+                        </div>
+                        <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-96 scrollbar-thin">{scssCode}</pre>
+                      </div>
+                    );
+                  })()}
+
+                  {/* JSON */}
+                  {exportCodeTab === 'json' && (() => {
+                    const jsonObj = {
+                      league: INITIAL_LEAGUE_DATA.league,
+                      teams: teams.map(t => ({
+                        id: t.id, name: t.team,
+                        colors: t.colors.reduce((acc, c) => {
+                          const key = c.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                          const rgb = hexToRgb(c.hex);
+                          const hsl = hexToHsl(c.hex);
+                          acc[key] = { name: c.name, hex: c.hex, rgb: `rgb(${rgb.r},${rgb.g},${rgb.b})`, hsl: `hsl(${hsl.h},${hsl.s}%,${hsl.l}%)` };
+                          return acc;
+                        }, {})
+                      }))
+                    };
+                    const jsonCode = JSON.stringify(jsonObj, null, 2);
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-300">Raw JSON (all formats)</span>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleCopy(jsonCode, 'JSON')} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20">
+                              <Copy className="w-3.5 h-3.5" /> Copy JSON
+                            </button>
+                            <button onClick={handleExportJSON} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20">
+                              <Download className="w-3.5 h-3.5" /> Download .json
+                            </button>
+                          </div>
+                        </div>
+                        <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-96 scrollbar-thin">{jsonCode}</pre>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 6: ACCESSIBILITY AUDIT ================= */}
+            {activeTab === 'accessibility' && (
+              <div className="max-w-5xl mx-auto space-y-6">
+                <div className="bg-slate-900/60 p-6 rounded-3xl border border-slate-800 space-y-6">
+                  <div className="border-b border-slate-800 pb-4">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                      <Download className="w-5 h-5 text-cyan-400" />
-                      League Palette Code Exporter
+                      <BookOpen className="w-5 h-5 text-cyan-400" />
+                      WCAG Accessibility Audit
                     </h2>
-                    <p className="text-xs text-slate-400">
-                      Export TRL color systems into CSS variables, Tailwind config snippets, SCSS, or JSON.
+                    <p className="text-xs text-slate-400 mt-1">
+                      Pairwise contrast matrix for every team. Useful for jersey number legibility, scoreboard text, and graphic design decisions.
+                      <span className="ml-2 text-emerald-400 font-semibold">AAA ≥7:1</span>
+                      <span className="ml-2 text-cyan-400 font-semibold">AA ≥4.5:1</span>
+                      <span className="ml-2 text-amber-400 font-semibold">AA Large ≥3:1</span>
+                      <span className="ml-2 text-rose-400 font-semibold">Fail &lt;3:1</span>
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-300">CSS Custom Properties (--variables)</span>
-                      <button
-                        onClick={() => {
-                          const cssCode = teams
-                            .map(
-                              t =>
-                                `/* ${t.team} */\n` +
-                                t.colors
-                                  .map(
-                                    c =>
-                                      `--trl-${t.id}-${c.name
-                                        .toLowerCase()
-                                        .replace(/[^a-z0-9]/g, '-')}: ${c.hex};`
-                                  )
-                                  .join('\n')
-                            )
-                            .join('\n\n');
-                          handleCopy(cssCode, 'CSS Variables');
-                        }}
-                        className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        Copy CSS Code
-                      </button>
-                    </div>
-
-                    <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-48 scrollbar-thin">
-                      {teams
-                        .map(
-                          t =>
-                            `/* ${t.team} */\n` +
-                            t.colors
-                              .map(
-                                c =>
-                                  `--trl-${t.id}-${c.name
-                                    .toLowerCase()
-                                    .replace(/[^a-z0-9]/g, '-')}: ${c.hex};`
-                              )
-                              .join('\n')
-                        )
-                        .join('\n\n')}
-                    </pre>
-                  </div>
-
-                  <div className="space-y-2 pt-4 border-t border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-300">Tailwind CSS Color Config Object</span>
-                      <button
-                        onClick={() => {
-                          const twObj = {};
-                          teams.forEach(t => {
-                            twObj[t.id] = {};
-                            t.colors.forEach(c => {
-                              const key = c.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                              twObj[t.id][key] = c.hex;
-                            });
-                          });
-                          handleCopy(JSON.stringify({ theme: { extend: { colors: twObj } } }, null, 2), 'Tailwind Config');
-                        }}
-                        className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        Copy Tailwind Config
-                      </button>
-                    </div>
-
-                    <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-48 scrollbar-thin">
-                      {JSON.stringify(
-                        {
-                          theme: {
-                            extend: {
-                              colors: teams.reduce((acc, t) => {
-                                acc[t.id] = t.colors.reduce((cAcc, c) => {
-                                  cAcc[c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')] = c.hex;
-                                  return cAcc;
-                                }, {});
-                                return acc;
-                              }, {})
-                            }
+                  <div className="space-y-8">
+                    {teams.map(team => {
+                      const pairs = [];
+                      for (let i = 0; i < team.colors.length; i++) {
+                        for (let j = 0; j < team.colors.length; j++) {
+                          if (i !== j) {
+                            pairs.push({ fg: team.colors[i], bg: team.colors[j], ratio: getContrastRatio(team.colors[i].hex, team.colors[j].hex) });
                           }
-                        },
-                        null,
-                        2
-                      )}
-                    </pre>
+                        }
+                      }
+                      const failCount = pairs.filter(p => p.ratio < 3).length;
+                      const passAAA = pairs.filter(p => p.ratio >= 7).length;
+                      return (
+                        <div key={team.id} className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+                          <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800">
+                            <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-700 flex items-center justify-center bg-slate-800">
+                              {teamLogos[team.id]
+                                ? <img src={teamLogos[team.id]} alt="" className="w-full h-full object-cover" />
+                                : <Shield className="w-4 h-4 text-cyan-400" />
+                              }
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-bold text-white text-sm">{team.team}</h3>
+                              <div className="flex gap-3 text-[10px] mt-0.5">
+                                <span className="text-emerald-400">{passAAA} AAA pairs</span>
+                                {failCount > 0 && <span className="text-rose-400">{failCount} failing pairs</span>}
+                                {failCount === 0 && <span className="text-slate-400">All pairs pass AA Large</span>}
+                              </div>
+                            </div>
+                            {/* Color strip */}
+                            <div className="flex gap-1">
+                              {team.colors.map(c => (
+                                <div key={c.id} className="w-5 h-5 rounded border border-slate-700" style={{ backgroundColor: c.hex }} title={c.name} />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Matrix */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-slate-800">
+                                  <th className="px-4 py-2 text-left text-slate-500 font-normal text-[10px] whitespace-nowrap">FG ↓ / BG →</th>
+                                  {team.colors.map(bg => (
+                                    <th key={bg.id} className="px-3 py-2 text-center font-medium whitespace-nowrap">
+                                      <div className="flex flex-col items-center gap-1">
+                                        <div className="w-5 h-5 rounded border border-slate-700" style={{ backgroundColor: bg.hex }} />
+                                        <span className="text-slate-400 text-[9px] truncate max-w-[60px]">{bg.name}</span>
+                                      </div>
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {team.colors.map(fg => (
+                                  <tr key={fg.id} className="border-b border-slate-800/60 last:border-0">
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded border border-slate-700 shrink-0" style={{ backgroundColor: fg.hex }} />
+                                        <span className="text-slate-400 text-[10px] truncate max-w-[80px]">{fg.name}</span>
+                                      </div>
+                                    </td>
+                                    {team.colors.map(bg => {
+                                      if (fg.id === bg.id) {
+                                        return <td key={bg.id} className="px-3 py-2 text-center"><span className="text-slate-700 text-[10px]">—</span></td>;
+                                      }
+                                      const ratio = getContrastRatio(fg.hex, bg.hex);
+                                      let cellCls = '', badgeLabel = '';
+                                      if (ratio >= 7) { cellCls = 'bg-emerald-500/15 text-emerald-300'; badgeLabel = 'AAA'; }
+                                      else if (ratio >= 4.5) { cellCls = 'bg-cyan-500/15 text-cyan-300'; badgeLabel = 'AA'; }
+                                      else if (ratio >= 3) { cellCls = 'bg-amber-500/15 text-amber-300'; badgeLabel = 'AA+'; }
+                                      else { cellCls = 'bg-rose-500/15 text-rose-300'; badgeLabel = 'Fail'; }
+                                      return (
+                                        <td key={bg.id} className="px-2 py-1.5">
+                                          <div className={`rounded-lg px-2 py-1 text-center ${cellCls}`}>
+                                            <div className="font-mono font-bold text-[10px]">{ratio.toFixed(1)}:1</div>
+                                            <div className="text-[9px] font-bold">{badgeLabel}</div>
+                                          </div>
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             )}
           </main>
+
+          {/* ====== PRINT-ONLY MEDIA GUIDE (hidden on screen) ====== */}
+          <div className="print-show" aria-hidden="true">
+            {teams.map(team => {
+              return (
+                <div key={team.id} className="print-team-page" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, borderBottom: '2px solid #e5e7eb', paddingBottom: 12 }}>
+                    {teamLogos[team.id] && (
+                      <img src={teamLogos[team.id]} alt="" style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: '1px solid #e5e7eb' }} />
+                    )}
+                    <div>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: '#111' }}>{team.team}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>The Real League (TRL) — Official Color System</div>
+                      {team.note && <div style={{ fontSize: 10, color: '#f59e0b', marginTop: 2 }}>{team.note}</div>}
+                    </div>
+                  </div>
+
+                  {/* Color strip */}
+                  <div style={{ display: 'flex', height: 48, borderRadius: 8, overflow: 'hidden', marginBottom: 16, border: '1px solid #e5e7eb' }}>
+                    {team.colors.map(c => (
+                      <div key={c.id} style={{ flex: 1, backgroundColor: c.hex }} />
+                    ))}
+                  </div>
+
+                  {/* Color detail rows */}
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f9fafb' }}>
+                        <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>#</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>Swatch</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>Name</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>HEX</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>RGB</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>HSL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {team.colors.map((c, i) => {
+                        const rgb = hexToRgb(c.hex);
+                        const hsl = hexToHsl(c.hex);
+                        return (
+                          <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                            <td style={{ padding: '6px 10px', color: '#9ca3af', fontFamily: 'monospace' }}>{i+1}</td>
+                            <td style={{ padding: '6px 10px' }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: c.hex, border: '1px solid #e5e7eb' }} />
+                            </td>
+                            <td style={{ padding: '6px 10px', fontWeight: 600, color: '#111' }}>{c.name}</td>
+                            <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#059669' }}>{c.hex}</td>
+                            <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#4b5563' }}>rgb({rgb.r},{rgb.g},{rgb.b})</td>
+                            <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#4b5563' }}>hsl({hsl.h},{hsl.s}%,{hsl.l}%)</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* CSS Variables block */}
+                  <div style={{ marginTop: 16, padding: '10px 14px', backgroundColor: '#f8fafc', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>CSS Variables</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#0891b2', lineHeight: 1.7 }}>
+                      {team.colors.map(c => (
+                        <div key={c.id}>{`--trl-${team.id}-${c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}: ${c.hex};`}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       );
     }
