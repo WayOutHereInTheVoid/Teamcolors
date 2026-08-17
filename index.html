@@ -917,28 +917,57 @@
         if (!canvas) return;
 
         const dataUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        let filename = 'trl-color-palettes.png';
-        if (exportTeamScope === 'single' && exportSingleTeamId) {
-          const t = teams.find(team => team.id === exportSingleTeamId);
-          if (t) {
-            filename = `${t.team.toLowerCase().replace(/[^a-z0-9]/g, '-')}-palette.png`;
-          }
-        }
-        link.download = filename;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
 
-        setToastMessage(`Downloaded PNG: ${filename}`);
-        setTimeout(() => setToastMessage(null), 3000);
+        // iOS Safari does not support the `download` attribute on anchor tags —
+        // it shows a prompt but never saves the file. Open in a new tab instead
+        // so the user can long-press → Save to Photos / Save to Files.
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isIOS) {
+          const newTab = window.open();
+          if (newTab) {
+            newTab.document.body.style.margin = '0';
+            newTab.document.body.style.background = '#090D16';
+            newTab.document.body.innerHTML = `
+              <div style="padding:16px;font-family:system-ui;color:#94A3B8;font-size:13px;text-align:center;padding-bottom:8px">
+                Long-press the image &rarr; <strong style="color:#22D3EE">Save to Photos</strong> or <strong style="color:#22D3EE">Save to Files</strong>
+              </div>
+              <img src="${dataUrl}" style="max-width:100%;display:block;border-radius:8px" />
+            `;
+          }
+          setToastMessage('Image opened — long-press to save on iOS');
+        } else {
+          let filename = 'trl-color-palettes.png';
+          if (exportTeamScope === 'single' && exportSingleTeamId) {
+            const t = teams.find(team => team.id === exportSingleTeamId);
+            if (t) {
+              filename = `${t.team.toLowerCase().replace(/[^a-z0-9]/g, '-')}-palette.png`;
+            }
+          }
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setToastMessage(`Downloaded PNG: ${filename}`);
+        }
+
+        setTimeout(() => setToastMessage(null), 3500);
       };
 
       // Copy Image to Clipboard
       const handleCopyImageToClipboard = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+
+        // ClipboardItem image API is not supported on iOS Safari —
+        // redirect to the download flow so the user still gets the image.
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          handleDownloadImage();
+          return;
+        }
 
         try {
           canvas.toBlob(async (blob) => {
