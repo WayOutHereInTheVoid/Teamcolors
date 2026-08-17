@@ -1,0 +1,2322 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRL Color Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and ReactDOM UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel Standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide React UMD -->
+  <script src="https://unpkg.com/lucide-react@0.344.0/dist/umd/lucide-react.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useCallback, useRef } = React;
+
+    // Safely extract Lucide icons from UMD global with SVG fallbacks
+    const lucideObj = window.lucideReact || window.LucideReact || {};
+    
+    const createIcon = (dPaths) => (props) => (
+      <svg 
+        {...props} 
+        xmlns="http://www.w3.org/2000/svg" 
+        width={props?.size || 24} 
+        height={props?.size || 24} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className={props?.className || "w-5 h-5"}
+      >
+        {dPaths}
+      </svg>
+    );
+
+    const Palette = lucideObj.Palette || createIcon(<path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10a2 2 0 0 0 2-2c0-.553-.224-1.053-.586-1.414A2 2 0 0 1 13 17a2 2 0 0 1 2-2h2a5 5 0 0 0 5-5c0-4.418-4.03-8-10-8z"/>);
+    const Search = lucideObj.Search || createIcon(<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>);
+    const Copy = lucideObj.Copy || createIcon(<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>);
+    const Check = lucideObj.Check || createIcon(<path d="M20 6 9 17l-5-5"/>);
+    const RotateCcw = lucideObj.RotateCcw || createIcon(<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>);
+    const Sliders = lucideObj.Sliders || createIcon(<><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></>);
+    const Eye = lucideObj.Eye || createIcon(<><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>);
+    const Layers = lucideObj.Layers || createIcon(<><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L3.18 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L3.18 17.5"/></>);
+    const Download = lucideObj.Download || createIcon(<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>);
+    const X = lucideObj.X || createIcon(<path d="M18 6 6 18M6 6l12 12"/>);
+    const Plus = lucideObj.Plus || createIcon(<path d="M5 12h14M12 5v14"/>);
+    const Trash2 = lucideObj.Trash2 || createIcon(<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>);
+    const Maximize2 = lucideObj.Maximize2 || createIcon(<><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></>);
+    const Shield = lucideObj.Shield || createIcon(<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>);
+    const Shirt = lucideObj.Shirt || createIcon(<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>);
+    const Layout = lucideObj.Layout || createIcon(<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></>);
+    const Sparkles = lucideObj.Sparkles || createIcon(<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/>);
+    const Info = lucideObj.Info || createIcon(<><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></>);
+    const CheckCircle2 = lucideObj.CheckCircle2 || createIcon(<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>);
+    const ChevronDown = lucideObj.ChevronDown || createIcon(<path d="m6 9 6 6 6-6"/>);
+    const ChevronUp = lucideObj.ChevronUp || createIcon(<path d="m18 15-6-6-6 6"/>);
+    const GripVertical = lucideObj.GripVertical || createIcon(<><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></>);
+    const FileImage = lucideObj.FileImage || lucideObj.Image || createIcon(<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/></>);
+    const CheckSquare = lucideObj.CheckSquare || createIcon(<><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>);
+    const Square = lucideObj.Square || createIcon(<rect width="18" height="18" x="3" y="3" rx="2"/>);
+
+    // --- INITIAL LEAGUE DATA (SORTED ALPHABETICALLY BY TEAM NAME) ---
+    const INITIAL_LEAGUE_DATA = {
+      league: "The Real League (TRL)",
+      teams: [
+        {
+          id: "boston-food-mafia",
+          team: "Boston Food Mafia",
+          note: "PLACEHOLDER — customizable",
+          colors: [
+            { id: "bfm-1", name: "Crimson Red", hex: "#9E1B1B" },
+            { id: "bfm-2", name: "Cannoli Cream", hex: "#F7F0E3" },
+            { id: "bfm-3", name: "Harbor Slate", hex: "#2C3539" },
+            { id: "bfm-4", name: "Italian Olive", hex: "#3A5A40" }
+          ]
+        },
+        {
+          id: "brutal-hogs",
+          team: "Brutal Hogs",
+          note: null,
+          colors: [
+            { id: "bh-1", name: "Bone White", hex: "#F5F0E8" },
+            { id: "bh-2", name: "Battleship Grey", hex: "#6B7280" },
+            { id: "bh-3", name: "Near Black", hex: "#1A1A1A" },
+            { id: "bh-4", name: "Blood Maroon", hex: "#860B17" }
+          ]
+        },
+        {
+          id: "cali-bird-gang",
+          team: "Cali Bird Gang",
+          note: "PLACEHOLDER — customizable",
+          colors: [
+            { id: "cbg-1", name: "Sunset Orange", hex: "#FF6B35" },
+            { id: "cbg-2", name: "Pacific Navy", hex: "#003566" },
+            { id: "cbg-3", name: "Feather White", hex: "#F8F9FA" },
+            { id: "cbg-4", name: "Golden Wing", hex: "#FFC300" }
+          ]
+        },
+        {
+          id: "california-burritos",
+          team: "California Burritos",
+          note: null,
+          colors: [
+            { id: "cb-1", name: "Tortilla Cream", hex: "#F7E3BF" },
+            { id: "cb-2", name: "Salsa Red", hex: "#BA1417" },
+            { id: "cb-3", name: "Night Black", hex: "#0F0F0D" },
+            { id: "cb-4", name: "Mission Green", hex: "#0D6136" }
+          ]
+        },
+        {
+          id: "dtown-swirlies",
+          team: "D-Town Swirlies",
+          note: null,
+          colors: [
+            { id: "ds-1", name: "Oxford Blue", hex: "#071C4A" },
+            { id: "ds-2", name: "Undertow Blue", hex: "#0E2B6C" },
+            { id: "ds-3", name: "Current Blue", hex: "#2961BF" },
+            { id: "ds-4", name: "Foam White", hex: "#FEFEFE" }
+          ]
+        },
+        {
+          id: "denver-yetis",
+          team: "Denver Yetis",
+          note: null,
+          colors: [
+            { id: "dy-1", name: "Electric Cyan", hex: "#00CAFF" },
+            { id: "dy-2", name: "Powder Blue", hex: "#B5D9FF" },
+            { id: "dy-3", name: "Near-Black Navy", hex: "#031221" },
+            { id: "dy-4", name: "White", hex: "#FFFFFF" }
+          ]
+        },
+        {
+          id: "gilbert-gamblers",
+          team: "Gilbert Gamblers",
+          note: null,
+          colors: [
+            { id: "gg-1", name: "Jackpot Gold", hex: "#FCC900" },
+            { id: "gg-2", name: "Electric Violet", hex: "#5B00BD" },
+            { id: "gg-3", name: "Midnight Purple", hex: "#320070" },
+            { id: "gg-4", name: "Bone Cream", hex: "#F2EBEF" }
+          ]
+        },
+        {
+          id: "lone-star-legends",
+          team: "Lone Star Legends",
+          note: null,
+          colors: [
+            { id: "lsl-1", name: "Legends Blue", hex: "#182E43" },
+            { id: "lsl-2", name: "Armadillo Steel", hex: "#3D4A56" },
+            { id: "lsl-3", name: "Saddle Leather", hex: "#7C5235" },
+            { id: "lsl-4", name: "Bone Star", hex: "#E8DBBD" }
+          ]
+        },
+        {
+          id: "mt-fuji-murder-hornets",
+          team: "Mt. Fuji Murder Hornets",
+          note: null,
+          colors: [
+            { id: "mfmh-1", name: "Ancient Gold", hex: "#87702A" },
+            { id: "mfmh-2", name: "Peak White", hex: "#FDFDFD" },
+            { id: "mfmh-3", name: "Hornet Gold", hex: "#F7CE46" },
+            { id: "mfmh-4", name: "Swarm Black", hex: "#000100" }
+          ]
+        },
+        {
+          id: "prestige-worldwide",
+          team: "Prestige Worldwide",
+          note: null,
+          colors: [
+            { id: "pw-1", name: "Worldwide Blue", hex: "#0087D5" },
+            { id: "pw-2", name: "Deep Water Navy", hex: "#003044" },
+            { id: "pw-3", name: "Yacht White", hex: "#F6FBF7" },
+            { id: "pw-4", name: "Landmass Green", hex: "#39B54A" }
+          ]
+        },
+        {
+          id: "rochester-jesters",
+          team: "Rochester Jesters",
+          note: null,
+          colors: [
+            { id: "rj-1", name: "Dungeon Stone", hex: "#7E827E" },
+            { id: "rj-2", name: "Gallows Black", hex: "#27272B" },
+            { id: "rj-3", name: "Chaos Orange", hex: "#EE4A00" }
+          ]
+        },
+        {
+          id: "sonora-sugar-skulls",
+          team: "Sonora Sugar Skulls",
+          note: null,
+          colors: [
+            { id: "sss-1", name: "Obsidian", hex: "#3B1041" },
+            { id: "sss-2", name: "Sacred Purple", hex: "#6B2A81" },
+            { id: "sss-3", name: "Bougainvillea", hex: "#A32B8C" },
+            { id: "sss-4", name: "Desert Glass", hex: "#59C3B5" }
+          ]
+        }
+      ]
+    };
+
+    // --- COLOR MATH HELPERS ---
+    function hexToRgb(hex) {
+      if (!hex) return { r: 0, g: 0, b: 0 };
+      let cleanHex = hex.replace('#', '');
+      if (cleanHex.length === 3) {
+        cleanHex = cleanHex.split('').map(c => c + c).join('');
+      }
+      const num = parseInt(cleanHex, 16);
+      if (isNaN(num)) return { r: 0, g: 0, b: 0 };
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+      };
+    }
+
+    function rgbToHex(r, g, b) {
+      const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+      const toHex = (c) => {
+        const h = clamp(c).toString(16);
+        return h.length === 1 ? '0' + h : h;
+      };
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+    }
+
+    function rgbToHsb(r, g, b) {
+      const rNorm = r / 255;
+      const gNorm = g / 255;
+      const bNorm = b / 255;
+
+      const max = Math.max(rNorm, gNorm, bNorm);
+      const min = Math.min(rNorm, gNorm, bNorm);
+      const d = max - min;
+
+      let h = 0;
+      const s = max === 0 ? 0 : d / max;
+      const brightness = max;
+
+      if (max !== min) {
+        switch (max) {
+          case rNorm:
+            h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0);
+            break;
+          case gNorm:
+            h = (bNorm - rNorm) / d + 2;
+            break;
+          case bNorm:
+            h = (rNorm - gNorm) / d + 4;
+            break;
+        }
+        h /= 6;
+      }
+
+      return {
+        h: Math.round(h * 360),
+        s: Math.round(s * 100),
+        b: Math.round(brightness * 100)
+      };
+    }
+
+    function hsbToRgb(h, s, b) {
+      const hNorm = ((h % 360 + 360) % 360) / 360;
+      const sNorm = Math.max(0, Math.min(100, s)) / 100;
+      const bNorm = Math.max(0, Math.min(100, b)) / 100;
+
+      const i = Math.floor(hNorm * 6);
+      const f = hNorm * 6 - i;
+      const p = bNorm * (1 - sNorm);
+      const q = bNorm * (1 - f * sNorm);
+      const t = bNorm * (1 - (1 - f) * sNorm);
+
+      let red = 0, green = 0, blue = 0;
+
+      switch (i % 6) {
+        case 0: red = bNorm; green = t; blue = p; break;
+        case 1: red = q; green = bNorm; blue = p; break;
+        case 2: red = p; green = bNorm; blue = t; break;
+        case 3: red = p; green = q; blue = bNorm; break;
+        case 4: red = t; green = p; blue = bNorm; break;
+        case 5: red = bNorm; green = p; blue = q; break;
+      }
+
+      return {
+        r: Math.round(red * 255),
+        g: Math.round(green * 255),
+        b: Math.round(blue * 255)
+      };
+    }
+
+    function getRelativeLuminance({ r, g, b }) {
+      const a = [r, g, b].map(v => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+    }
+
+    function getContrastRatio(hex1, hex2) {
+      const rgb1 = hexToRgb(hex1);
+      const rgb2 = hexToRgb(hex2);
+      const lum1 = getRelativeLuminance(rgb1);
+      const lum2 = getRelativeLuminance(rgb2);
+      const brightest = Math.max(lum1, lum2);
+      const darkest = Math.min(lum1, lum2);
+      return (brightest + 0.05) / (darkest + 0.05);
+    }
+
+    function getHueGroup(hex) {
+      const rgb = hexToRgb(hex);
+      const { h, s, b } = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+      if (s < 12 || b < 8 || (b > 93 && s < 15)) {
+        return 'Neutrals & Greys';
+      }
+      if (h >= 345 || h < 15) return 'Reds & Maroons';
+      if (h >= 15 && h < 45) return 'Oranges';
+      if (h >= 45 && h < 70) return 'Yellows & Golds';
+      if (h >= 70 && h < 165) return 'Greens';
+      if (h >= 165 && h < 200) return 'Cyans & Aquas';
+      if (h >= 200 && h < 260) return 'Blues';
+      if (h >= 260 && h < 320) return 'Purples & Violets';
+      if (h >= 320 && h < 345) return 'Pinks & Magentas';
+
+      return 'Neutrals & Greys';
+    }
+
+    function getBestTextColor(bgHex) {
+      const ratioWithWhite = getContrastRatio(bgHex, '#FFFFFF');
+      const ratioWithBlack = getContrastRatio(bgHex, '#111827');
+      return ratioWithWhite >= ratioWithBlack ? '#FFFFFF' : '#111827';
+    }
+
+    function blendColors(hex1, hex2) {
+      const rgb1 = hexToRgb(hex1);
+      const rgb2 = hexToRgb(hex2);
+      return rgbToHex(
+        Math.round((rgb1.r + rgb2.r) / 2),
+        Math.round((rgb1.g + rgb2.g) / 2),
+        Math.round((rgb1.b + rgb2.b) / 2)
+      );
+    }
+
+    // --- CANVAS DRAWING HELPERS ---
+    function drawRoundedRect(ctx, x, y, width, height, radius, fill = true, stroke = false, fillColor = '#000', strokeColor = '#333') {
+      ctx.save();
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, width, height, radius);
+      } else {
+        const r = typeof radius === 'number' ? radius : radius[0] || 0;
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + width - r, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+        ctx.lineTo(x + width, y + height - r);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        ctx.lineTo(x + r, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+      }
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawRoundedSegment(ctx, x, y, width, height, fillHex, isLeft, isRight, radius = 8) {
+      ctx.save();
+      ctx.fillStyle = fillHex;
+      ctx.beginPath();
+      const rL = isLeft ? radius : 0;
+      const rR = isRight ? radius : 0;
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, width, height, [rL, rR, rR, rL]);
+      } else {
+        ctx.rect(x, y, width, height);
+      }
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [teams, setTeams] = useState(INITIAL_LEAGUE_DATA.teams);
+      const [activeTab, setActiveTab] = useState('teams'); // 'teams', 'spectrum', 'compare', 'export-image', 'export'
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedTeamId, setSelectedTeamId] = useState(null);
+      const [toastMessage, setToastMessage] = useState(null);
+
+      // Drag and Drop state inside Modal
+      const [draggedIdx, setDraggedIdx] = useState(null);
+      const [dragOverIdx, setDragOverIdx] = useState(null);
+
+      // Compare Tool State
+      const [compareColorA, setCompareColorA] = useState({
+        name: 'Denver Yetis - Electric Cyan',
+        hex: '#00CAFF'
+      });
+      const [compareColorB, setCompareColorB] = useState({
+        name: 'Denver Yetis - Near-Black Navy',
+        hex: '#031221'
+      });
+
+      // Spectrum Filters
+      const [spectrumGroupFilter, setSpectrumGroupFilter] = useState('ALL');
+      const [spectrumTeamFilter, setSpectrumTeamFilter] = useState('ALL');
+      const [spectrumSortBy, setSpectrumSortBy] = useState('hue');
+
+      // --- IMAGE EXPORT STUDIO STATE ---
+      const [exportTeamScope, setExportTeamScope] = useState('all'); // 'all', 'single', 'custom'
+      const [exportSingleTeamId, setExportSingleTeamId] = useState(INITIAL_LEAGUE_DATA.teams[0].id);
+      const [selectedCustomTeamIds, setSelectedCustomTeamIds] = useState(INITIAL_LEAGUE_DATA.teams.map(t => t.id));
+      const [exportLayout, setExportLayout] = useState('grid'); // 'grid', 'stack', 'compact'
+      const [exportCols, setExportCols] = useState(2);
+      const [exportTheme, setExportTheme] = useState('dark'); // 'dark', 'light', 'midnight', 'navy'
+      const [exportDetail, setExportDetail] = useState('full'); // 'full', 'standard', 'minimal'
+      const [exportShowHeader, setExportShowHeader] = useState(true);
+      const [exportScale, setExportScale] = useState(2); // 1, 2, 3
+      const [exportTitle, setExportTitle] = useState('TRL Team Color Guidelines');
+      const [exportSubtitle, setExportSubtitle] = useState('Official Color Systems & Format Reference');
+      
+      const canvasRef = useRef(null);
+
+      // Clipboard Copier
+      const handleCopy = useCallback((text, label = 'Color') => {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text);
+          } else {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+          }
+          setToastMessage(`Copied ${label}: ${text}`);
+          setTimeout(() => setToastMessage(null), 2500);
+        } catch (err) {
+          setToastMessage(`Copied: ${text}`);
+          setTimeout(() => setToastMessage(null), 2500);
+        }
+      }, []);
+
+      // Move Color Card Position
+      const handleMoveColor = useCallback((teamId, fromIdx, toIdx) => {
+        setTeams(prevTeams =>
+          prevTeams.map(t => {
+            if (t.id !== teamId) return t;
+            if (toIdx < 0 || toIdx >= t.colors.length) return t;
+            const updatedColors = [...t.colors];
+            const [movedItem] = updatedColors.splice(fromIdx, 1);
+            updatedColors.splice(toIdx, 0, movedItem);
+            return { ...t, colors: updatedColors };
+          })
+        );
+      }, []);
+
+      // Update Color in Team Palette
+      const handleUpdateColor = (teamId, colorId, key, value) => {
+        setTeams(prevTeams =>
+          prevTeams.map(t => {
+            if (t.id !== teamId) return t;
+            return {
+              ...t,
+              colors: t.colors.map(c => {
+                if (c.id !== colorId) return c;
+                if (key === 'hex') {
+                  let cleanHex = value.toUpperCase();
+                  if (!cleanHex.startsWith('#')) cleanHex = '#' + cleanHex;
+                  return { ...c, hex: cleanHex };
+                }
+                return { ...c, [key]: value };
+              })
+            };
+          })
+        );
+      };
+
+      // Reset Team Palette to Original
+      const handleResetTeam = (teamId) => {
+        const origTeam = INITIAL_LEAGUE_DATA.teams.find(t => t.id === teamId);
+        if (!origTeam) return;
+        setTeams(prevTeams =>
+          prevTeams.map(t => (t.id === teamId ? JSON.parse(JSON.stringify(origTeam)) : t))
+        );
+        setToastMessage(`Reset ${origTeam.team} to default TRL colors`);
+        setTimeout(() => setToastMessage(null), 2500);
+      };
+
+      // Reset All Teams
+      const handleResetAll = () => {
+        setTeams(JSON.parse(JSON.stringify(INITIAL_LEAGUE_DATA.teams)));
+        setToastMessage('Reset all team palettes to TRL defaults');
+        setTimeout(() => setToastMessage(null), 2500);
+      };
+
+      // Add Custom Color to Team
+      const handleAddColor = (teamId) => {
+        setTeams(prevTeams =>
+          prevTeams.map(t => {
+            if (t.id !== teamId) return t;
+            const newId = `${teamId}-custom-${Date.now()}`;
+            return {
+              ...t,
+              colors: [
+                ...t.colors,
+                { id: newId, name: `Custom Color ${t.colors.length + 1}`, hex: '#3B82F6' }
+              ]
+            };
+          })
+        );
+      };
+
+      // Delete Color from Team
+      const handleDeleteColor = (teamId, colorId) => {
+        setTeams(prevTeams =>
+          prevTeams.map(t => {
+            if (t.id !== teamId) return t;
+            if (t.colors.length <= 2) return t;
+            return {
+              ...t,
+              colors: t.colors.filter(c => c.id !== colorId)
+            };
+          })
+        );
+      };
+
+      // Filtered Teams for Grid
+      const filteredTeams = useMemo(() => {
+        if (!searchQuery.trim()) return teams;
+        const q = searchQuery.toLowerCase();
+        return teams.filter(team => {
+          const matchTeamName = team.team.toLowerCase().includes(q);
+          const matchColor = team.colors.some(
+            c => c.name.toLowerCase().includes(q) || c.hex.toLowerCase().includes(q)
+          );
+          return matchTeamName || matchColor;
+        });
+      }, [teams, searchQuery]);
+
+      // Flattened All Colors across League
+      const allLeagueColors = useMemo(() => {
+        const list = [];
+        teams.forEach(t => {
+          t.colors.forEach(c => {
+            const rgb = hexToRgb(c.hex);
+            const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+            const group = getHueGroup(c.hex);
+            list.push({
+              ...c,
+              teamId: t.id,
+              teamName: t.team,
+              rgb,
+              hsb,
+              group
+            });
+          });
+        });
+        return list;
+      }, [teams]);
+
+      // Spectrum Grouped & Filtered List
+      const spectrumColors = useMemo(() => {
+        let list = [...allLeagueColors];
+
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          list = list.filter(
+            c =>
+              c.name.toLowerCase().includes(q) ||
+              c.hex.toLowerCase().includes(q) ||
+              c.teamName.toLowerCase().includes(q)
+          );
+        }
+
+        if (spectrumGroupFilter !== 'ALL') {
+          list = list.filter(c => c.group === spectrumGroupFilter);
+        }
+
+        if (spectrumTeamFilter !== 'ALL') {
+          list = list.filter(c => c.teamId === spectrumTeamFilter);
+        }
+
+        list.sort((a, b) => {
+          if (spectrumSortBy === 'hue') return a.hsb.h - b.hsb.h;
+          if (spectrumSortBy === 'brightness') return b.hsb.b - a.hsb.b;
+          if (spectrumSortBy === 'saturation') return b.hsb.s - a.hsb.s;
+          if (spectrumSortBy === 'name') return a.name.localeCompare(b.name);
+          return 0;
+        });
+
+        return list;
+      }, [allLeagueColors, searchQuery, spectrumGroupFilter, spectrumTeamFilter, spectrumSortBy]);
+
+      const selectedTeam = useMemo(
+        () => teams.find(t => t.id === selectedTeamId) || null,
+        [teams, selectedTeamId]
+      );
+
+      // --- EXPORT TARGET TEAMS COMPUTED ---
+      const exportTeams = useMemo(() => {
+        if (exportTeamScope === 'all') {
+          return teams;
+        }
+        if (exportTeamScope === 'single') {
+          const found = teams.find(t => t.id === exportSingleTeamId);
+          return found ? [found] : [];
+        }
+        if (exportTeamScope === 'custom') {
+          return teams.filter(t => selectedCustomTeamIds.includes(t.id));
+        }
+        return teams;
+      }, [teams, exportTeamScope, exportSingleTeamId, selectedCustomTeamIds]);
+
+      // Quick launcher to export single team
+      const handleOpenImageExportForTeam = (teamId) => {
+        setExportTeamScope('single');
+        setExportSingleTeamId(teamId);
+        setActiveTab('export-image');
+      };
+
+      // --- CANVAS RENDERING ENGINE ---
+      const renderExportCanvas = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const targetTeams = exportTeams;
+        if (targetTeams.length === 0) {
+          canvas.width = 800;
+          canvas.height = 400;
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(0, 0, 800, 400);
+          ctx.fillStyle = '#94A3B8';
+          ctx.font = '16px Inter, system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('No teams selected for image export', 400, 200);
+          return;
+        }
+
+        // Theme Palette Configs
+        let bgColor = '#090D16';
+        let cardBg = '#0F172A';
+        let cardBorder = '#1E293B';
+        let textColor = '#F8FAFC';
+        let textMuted = '#94A3B8';
+        let accentColor = '#06B6D4';
+        let badgeBg = 'rgba(6, 182, 212, 0.15)';
+        let badgeText = '#22D3EE';
+
+        if (exportTheme === 'light') {
+          bgColor = '#F8FAFC';
+          cardBg = '#FFFFFF';
+          cardBorder = '#E2E8F0';
+          textColor = '#0F172A';
+          textMuted = '#64748B';
+          accentColor = '#0284C7';
+          badgeBg = '#E0F2FE';
+          badgeText = '#0369A1';
+        } else if (exportTheme === 'midnight') {
+          bgColor = '#030712';
+          cardBg = '#0B0F19';
+          cardBorder = '#1F2937';
+          textColor = '#F9FAFB';
+          textMuted = '#6B7280';
+          accentColor = '#38BDF8';
+          badgeBg = 'rgba(56, 189, 248, 0.15)';
+          badgeText = '#38BDF8';
+        } else if (exportTheme === 'navy') {
+          bgColor = '#0B1329';
+          cardBg = '#111C3A';
+          cardBorder = '#1E2E5C';
+          textColor = '#FFFFFF';
+          textMuted = '#8DA4D0';
+          accentColor = '#38BDF8';
+          badgeBg = 'rgba(56, 189, 248, 0.2)';
+          badgeText = '#7DD3FC';
+        }
+
+        const dpr = exportScale;
+        const padding = 48;
+        const headerHeight = exportShowHeader ? 110 : 20;
+
+        let cols = parseInt(exportCols, 10) || 2;
+        if (exportLayout === 'stack') cols = 1;
+        if (exportLayout === 'compact') cols = Math.min(cols, 3);
+
+        const cardGap = 24;
+        let cardWidth = 420;
+        if (cols === 1) cardWidth = 680;
+        if (cols === 3) cardWidth = 360;
+        if (cols === 4) cardWidth = 320;
+
+        const maxColorsInTeam = Math.max(...targetTeams.map(t => t.colors.length));
+        let cardHeight = 220;
+        if (exportLayout === 'compact') {
+          cardHeight = 110;
+        } else if (exportDetail === 'full') {
+          cardHeight = 110 + (maxColorsInTeam * 36);
+        } else if (exportDetail === 'standard') {
+          cardHeight = 100 + (maxColorsInTeam * 28);
+        } else {
+          cardHeight = 150;
+        }
+
+        const numRows = Math.ceil(targetTeams.length / cols);
+        const totalWidth = padding * 2 + cols * cardWidth + (cols - 1) * cardGap;
+        const footerHeight = 50;
+        const totalHeight = padding + headerHeight + numRows * cardHeight + (numRows - 1) * cardGap + footerHeight + padding;
+
+        canvas.width = totalWidth * dpr;
+        canvas.height = totalHeight * dpr;
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        // Canvas Background
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+        // Header Block
+        if (exportShowHeader) {
+          ctx.fillStyle = accentColor;
+          ctx.fillRect(padding, padding, 6, 54);
+
+          ctx.fillStyle = textColor;
+          ctx.font = 'bold 28px Inter, system-ui, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(exportTitle || 'TRL Team Color Guidelines', padding + 20, padding);
+
+          ctx.fillStyle = textMuted;
+          ctx.font = '500 14px Inter, system-ui, sans-serif';
+          ctx.fillText(
+            exportSubtitle || `Official Color Systems • ${targetTeams.length} Team${targetTeams.length > 1 ? 's' : ''}`,
+            padding + 20,
+            padding + 36
+          );
+
+          const badgeTextStr = `TRL COLOR STUDIO`;
+          ctx.font = 'bold 11px monospace';
+          const badgeWidth = ctx.measureText(badgeTextStr).width + 24;
+          const badgeX = totalWidth - padding - badgeWidth;
+          drawRoundedRect(ctx, badgeX, padding + 10, badgeWidth, 28, 14, true, true, badgeBg, cardBorder);
+          ctx.fillStyle = badgeText;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(badgeTextStr, badgeX + badgeWidth / 2, padding + 24);
+        }
+
+        // Render Team Cards
+        targetTeams.forEach((team, index) => {
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+
+          const x = padding + col * (cardWidth + cardGap);
+          const y = padding + headerHeight + row * (cardHeight + cardGap);
+
+          // Card Card Box
+          drawRoundedRect(ctx, x, y, cardWidth, cardHeight, 16, true, true, cardBg, cardBorder);
+
+          // Team Title
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = textColor;
+          ctx.font = 'bold 18px Inter, system-ui, sans-serif';
+
+          let displayName = team.team;
+          if (ctx.measureText(displayName).width > cardWidth - 100) {
+            while (displayName.length > 3 && ctx.measureText(displayName + '...').width > cardWidth - 100) {
+              displayName = displayName.slice(0, -1);
+            }
+            displayName += '...';
+          }
+          ctx.fillText(displayName, x + 20, y + 18);
+
+          if (team.note) {
+            ctx.font = '10px monospace';
+            ctx.fillStyle = '#F59E0B';
+            ctx.fillText('• PLACEHOLDER', x + 20 + ctx.measureText(displayName).width + 8, y + 22);
+          }
+
+          if (exportLayout === 'compact') {
+            const stripY = y + 52;
+            const stripH = 38;
+            const stripW = cardWidth - 40;
+            const swatchW = stripW / team.colors.length;
+
+            team.colors.forEach((c, cIdx) => {
+              const sx = x + 20 + cIdx * swatchW;
+              const isFirst = cIdx === 0;
+              const isLast = cIdx === team.colors.length - 1;
+              drawRoundedSegment(ctx, sx, stripY, swatchW, stripH, c.hex, isFirst, isLast);
+
+              ctx.fillStyle = getBestTextColor(c.hex);
+              ctx.font = 'bold 11px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(c.hex, sx + swatchW / 2, stripY + stripH / 2);
+            });
+          } else {
+            // Combined Top Color Bar
+            const stripY = y + 50;
+            const stripH = 18;
+            const stripW = cardWidth - 40;
+            const swatchW = stripW / team.colors.length;
+
+            team.colors.forEach((c, cIdx) => {
+              const sx = x + 20 + cIdx * swatchW;
+              const isFirst = cIdx === 0;
+              const isLast = cIdx === team.colors.length - 1;
+              drawRoundedSegment(ctx, sx, stripY, swatchW, stripH, c.hex, isFirst, isLast, 6);
+            });
+
+            if (exportDetail !== 'minimal') {
+              const startY = y + 80;
+              team.colors.forEach((c, cIdx) => {
+                const cy = startY + cIdx * (exportDetail === 'full' ? 36 : 28);
+                if (cy + 24 > y + cardHeight) return;
+
+                const swatchSize = exportDetail === 'full' ? 22 : 18;
+                drawRoundedRect(ctx, x + 20, cy, swatchSize, swatchSize, 6, true, true, c.hex, 'rgba(255,255,255,0.2)');
+
+                ctx.fillStyle = textColor;
+                ctx.font = '600 13px Inter, system-ui, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+
+                let cName = c.name;
+                if (ctx.measureText(cName).width > cardWidth / 2 - 30) {
+                  cName = cName.slice(0, 14) + '...';
+                }
+                ctx.fillText(cName, x + 20 + swatchSize + 10, cy + swatchSize / 2);
+
+                const rgb = hexToRgb(c.hex);
+                ctx.font = '11px monospace';
+                ctx.fillStyle = textMuted;
+                ctx.textAlign = 'right';
+
+                if (exportDetail === 'full') {
+                  ctx.fillText(`${c.hex} • rgb(${rgb.r},${rgb.g},${rgb.b})`, x + cardWidth - 20, cy + swatchSize / 2);
+                } else {
+                  ctx.fillText(c.hex, x + cardWidth - 20, cy + swatchSize / 2);
+                }
+              });
+            } else {
+              const startY = y + 82;
+              const swatchBoxW = (cardWidth - 40 - (team.colors.length - 1) * 8) / team.colors.length;
+              team.colors.forEach((c, cIdx) => {
+                const cx = x + 20 + cIdx * (swatchBoxW + 8);
+                const ch = 44;
+                drawRoundedRect(ctx, cx, startY, swatchBoxW, ch, 8, true, true, c.hex, 'rgba(255,255,255,0.15)');
+
+                ctx.fillStyle = getBestTextColor(c.hex);
+                ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(c.hex, cx + swatchBoxW / 2, startY + ch / 2);
+              });
+            }
+          }
+        });
+
+        // Footer Text
+        const footerY = totalHeight - padding - 10;
+        ctx.fillStyle = textMuted;
+        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Generated with TRL Color Studio • Official Color Guidelines`, totalWidth / 2, footerY);
+
+        ctx.restore();
+      }, [
+        exportTeams,
+        exportTheme,
+        exportCols,
+        exportLayout,
+        exportDetail,
+        exportShowHeader,
+        exportScale,
+        exportTitle,
+        exportSubtitle
+      ]);
+
+      // Re-render Canvas when activeTab === 'export-image' or settings change
+      useEffect(() => {
+        if (activeTab === 'export-image') {
+          const timer = setTimeout(() => {
+            renderExportCanvas();
+          }, 60);
+          return () => clearTimeout(timer);
+        }
+      }, [activeTab, renderExportCanvas]);
+
+      // Image Download Handler
+      const handleDownloadImage = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        let filename = 'trl-color-palettes.png';
+        if (exportTeamScope === 'single' && exportSingleTeamId) {
+          const t = teams.find(team => team.id === exportSingleTeamId);
+          if (t) {
+            filename = `${t.team.toLowerCase().replace(/[^a-z0-9]/g, '-')}-palette.png`;
+          }
+        }
+        link.download = filename;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setToastMessage(`Downloaded PNG: ${filename}`);
+        setTimeout(() => setToastMessage(null), 3000);
+      };
+
+      // Copy Image to Clipboard
+      const handleCopyImageToClipboard = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        try {
+          canvas.toBlob(async (blob) => {
+            if (!blob) return;
+            if (navigator.clipboard && window.ClipboardItem) {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              setToastMessage('Copied Palette Image to Clipboard!');
+              setTimeout(() => setToastMessage(null), 3000);
+            } else {
+              setToastMessage('Browser does not support direct image copying. Download PNG instead.');
+              setTimeout(() => setToastMessage(null), 3500);
+            }
+          }, 'image/png');
+        } catch (err) {
+          setToastMessage('Download PNG to export image');
+          setTimeout(() => setToastMessage(null), 3000);
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+          {/* Toast Notification */}
+          {toastMessage && (
+            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-cyan-500 text-slate-950 px-4 py-3 rounded-xl shadow-2xl font-semibold border border-cyan-300 animate-bounce">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+              <span>{toastMessage}</span>
+            </div>
+          )}
+
+          {/* Header Bar */}
+          <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 w-full md:w-auto justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+                    <Palette className="w-6 h-6 text-slate-950" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-xl font-bold tracking-tight text-white">TRL Color Studio</h1>
+                      <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs px-2 py-0.5 rounded-full font-mono">
+                        A–Z Teams
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">The Real League Color Systems & Format Converter</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleResetAll}
+                  className="md:hidden p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+                  title="Reset All Palettes"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 w-full md:w-auto overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('teams')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'teams'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Layers className="w-4 h-4" />
+                  <span>Team Palettes</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('spectrum')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'spectrum'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Hue Spectrum</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('compare')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'compare'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Sliders className="w-4 h-4" />
+                  <span>Compare Tool</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('export-image')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'export-image'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <FileImage className="w-4 h-4" />
+                  <span>Export Image</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('export')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'export'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export Code</span>
+                </button>
+              </div>
+
+              <button
+                onClick={handleResetAll}
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Reset All Defaults</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Main Container */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* ================= TAB 1: TEAMS GRID ================= */}
+            {activeTab === 'teams' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search team or color (e.g., Yetis, Cyan)..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-400 w-full sm:w-auto justify-between sm:justify-end">
+                    <span>Showing <strong className="text-white">{filteredTeams.length}</strong> / {teams.length} Teams</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="text-slate-500">Click any card to inspect & edit</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredTeams.map(team => {
+                    const isPlaceholder = !!team.note;
+                    return (
+                      <div
+                        key={team.id}
+                        onClick={() => setSelectedTeamId(team.id)}
+                        className="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg transition-all duration-300 hover:shadow-cyan-500/5 cursor-pointer flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 group-hover:border-cyan-500/40 transition">
+                                <Shield className="w-4 h-4 text-cyan-400" />
+                              </div>
+                              <div>
+                                <h2 className="font-bold text-slate-100 text-lg group-hover:text-cyan-400 transition">
+                                  {team.team}
+                                </h2>
+                                {isPlaceholder && (
+                                  <span className="text-[10px] text-amber-400/90 font-mono flex items-center gap-1">
+                                    <Info className="w-3 h-3 inline" /> {team.note}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenImageExportForTeam(team.id);
+                                }}
+                                className="p-1.5 rounded-lg bg-slate-800/80 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition"
+                                title="Export Image Palette"
+                              >
+                                <FileImage className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedTeamId(team.id);
+                                }}
+                                className="p-1.5 rounded-lg bg-slate-800/80 text-slate-400 group-hover:text-cyan-400 group-hover:bg-slate-800 transition"
+                                title="Inspect Palette"
+                              >
+                                <Maximize2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="h-14 rounded-xl overflow-hidden flex border border-slate-800 shadow-inner mb-4">
+                            {team.colors.map((color, idx) => (
+                              <div
+                                key={color.id || idx}
+                                className="h-full flex-1 relative group/swatch transition-transform duration-200 hover:scale-[1.03]"
+                                style={{ backgroundColor: color.hex }}
+                                title={`${color.name}: ${color.hex}`}
+                              >
+                                <span className="opacity-0 group-hover/swatch:opacity-100 absolute bottom-1 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-mono px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap shadow pointer-events-none transition">
+                                  {color.hex}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="space-y-2">
+                            {team.colors.map(color => {
+                              const rgb = hexToRgb(color.hex);
+                              const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+                              return (
+                                <div
+                                  key={color.id}
+                                  className="flex items-center justify-between p-2 rounded-xl bg-slate-950/50 border border-slate-800/60 hover:border-slate-700 transition"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div
+                                      className="w-5 h-5 rounded-md shrink-0 border border-slate-700/80 shadow-sm"
+                                      style={{ backgroundColor: color.hex }}
+                                    />
+                                    <div className="truncate">
+                                      <p className="text-xs font-medium text-slate-200 truncate">{color.name}</p>
+                                      <p className="text-[10px] font-mono text-slate-400 truncate">
+                                        {color.hex} • rgb({rgb.r},{rgb.g},{rgb.b})
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCopy(color.hex, 'HEX');
+                                      }}
+                                      className="px-2 py-1 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
+                                      title="Copy HEX"
+                                    >
+                                      HEX
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCopy(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'RGB');
+                                      }}
+                                      className="px-2 py-1 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
+                                      title="Copy RGB"
+                                    >
+                                      RGB
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCopy(`hsb(${hsb.h}, ${hsb.s}%, ${hsb.b}%)`, 'HSB');
+                                      }}
+                                      className="px-2 py-1 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
+                                      title="Copy HSB"
+                                    >
+                                      HSB
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-cyan-400 group-hover:text-cyan-300 font-medium">
+                          <span>Full Palette Review & Adjuster</span>
+                          <ChevronDown className="w-4 h-4 -rotate-90" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ================= TEAM PALETTE REVIEW & ADJUSTER MODAL ================= */}
+            {selectedTeam && (
+              <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-8 my-auto relative">
+                  <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                        <Shield className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight">{selectedTeam.team}</h2>
+                        <p className="text-xs text-slate-400">
+                          Move & Tune Palette • {selectedTeam.colors.length} Active Swatches
+                          {selectedTeam.note && <span className="text-amber-400 ml-2">({selectedTeam.note})</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenImageExportForTeam(selectedTeam.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-semibold border border-cyan-500/30 transition"
+                        title="Export Palette Image"
+                      >
+                        <FileImage className="w-3.5 h-3.5" />
+                        <span>Export Image</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleResetTeam(selectedTeam.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition"
+                        title="Reset to Original Colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Reset</span>
+                      </button>
+
+                      <button
+                        onClick={() => setSelectedTeamId(null)}
+                        className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Moveable Color Cards Section */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                          <Sliders className="w-4 h-4 text-cyan-400" />
+                          Palette Swatches & HSB Adjusters
+                        </h3>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Drag the grip handle or use up/down arrows on mobile to reorder colors.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => handleAddColor(selectedTeam.id)}
+                        className="self-start sm:self-auto flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-medium px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Color
+                      </button>
+                    </div>
+
+                    {/* Moveable Cards Container */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedTeam.colors.map((color, idx) => {
+                        const rgb = hexToRgb(color.hex);
+                        const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+                        const isBeingDragged = draggedIdx === idx;
+                        const isOverTarget = dragOverIdx === idx;
+
+                        return (
+                          <div
+                            key={color.id}
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggedIdx(idx);
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (dragOverIdx !== idx) {
+                                setDragOverIdx(idx);
+                              }
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverIdx === idx) {
+                                setDragOverIdx(null);
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (draggedIdx !== null && draggedIdx !== idx) {
+                                handleMoveColor(selectedTeam.id, draggedIdx, idx);
+                              }
+                              setDraggedIdx(null);
+                              setDragOverIdx(null);
+                            }}
+                            onDragEnd={() => {
+                              setDraggedIdx(null);
+                              setDragOverIdx(null);
+                            }}
+                            className={`bg-slate-950 rounded-2xl border transition-all duration-200 p-4 space-y-4 shadow-sm relative ${
+                              isBeingDragged ? 'opacity-40 border-dashed border-cyan-400 scale-[0.98]' : 'border-slate-800'
+                            } ${
+                              isOverTarget && !isBeingDragged ? 'border-cyan-400 bg-slate-900/90 scale-[1.01] shadow-lg shadow-cyan-500/10' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Drag Grip & Mobile Move Arrows */}
+                              <div className="flex flex-col items-center gap-1 shrink-0 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800/80">
+                                <div className="cursor-grab active:cursor-grabbing text-slate-500 hover:text-cyan-400 transition" title="Drag to reorder">
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
+
+                                <div className="flex flex-col gap-0.5">
+                                  <button
+                                    onClick={() => handleMoveColor(selectedTeam.id, idx, idx - 1)}
+                                    disabled={idx === 0}
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition"
+                                    title="Move Up / Left"
+                                  >
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveColor(selectedTeam.id, idx, idx + 1)}
+                                    disabled={idx === selectedTeam.colors.length - 1}
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition"
+                                    title="Move Down / Right"
+                                  >
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Color Picker Swatch */}
+                              <div className="relative shrink-0">
+                                <input
+                                  type="color"
+                                  value={color.hex.length === 7 ? color.hex : '#000000'}
+                                  onChange={e =>
+                                    handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
+                                  }
+                                  className="w-12 h-12 rounded-xl border border-slate-700 cursor-pointer overflow-hidden opacity-0 absolute inset-0 z-10"
+                                />
+                                <div
+                                  className="w-12 h-12 rounded-xl border border-slate-700 shadow-md flex items-center justify-center"
+                                  style={{ backgroundColor: color.hex }}
+                                >
+                                  <Sliders className="w-4 h-4 text-slate-900/60 drop-shadow" />
+                                </div>
+                              </div>
+
+                              {/* Editable Name & Hex input */}
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <input
+                                    type="text"
+                                    value={color.name}
+                                    onChange={e =>
+                                      handleUpdateColor(selectedTeam.id, color.id, 'name', e.target.value)
+                                    }
+                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs font-semibold text-white focus:outline-none focus:border-cyan-500"
+                                    placeholder="Color Name"
+                                  />
+                                  <span className="text-[10px] font-mono text-slate-500 px-1.5 py-0.5 rounded bg-slate-900">
+                                    #{idx + 1}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={color.hex}
+                                    onChange={e =>
+                                      handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
+                                    }
+                                    className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-0.5 text-xs font-mono text-cyan-400 focus:outline-none focus:border-cyan-500"
+                                  />
+
+                                  {selectedTeam.colors.length > 2 && (
+                                    <button
+                                      onClick={() => handleDeleteColor(selectedTeam.id, color.id)}
+                                      className="p-1 text-slate-500 hover:text-rose-400 transition"
+                                      title="Remove Color"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Quick Format Copy Strip */}
+                            <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800/60">
+                              <button
+                                onClick={() => handleCopy(color.hex, 'HEX')}
+                                className="bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-300 py-1 rounded text-center truncate border border-slate-800"
+                              >
+                                HEX: {color.hex}
+                              </button>
+                              <button
+                                onClick={() => handleCopy(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'RGB')}
+                                className="bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-300 py-1 rounded text-center truncate border border-slate-800"
+                              >
+                                RGB: {rgb.r},{rgb.g},{rgb.b}
+                              </button>
+                              <button
+                                onClick={() => handleCopy(`hsb(${hsb.h}, ${hsb.s}%, ${hsb.b}%)`, 'HSB')}
+                                className="bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-300 py-1 rounded text-center truncate border border-slate-800"
+                              >
+                                HSB: {hsb.h}°,{hsb.s}%,{hsb.b}%
+                              </button>
+                            </div>
+
+                            {/* HSB Tuning Sliders */}
+                            <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-[10px]">
+                              <div>
+                                <div className="flex justify-between text-slate-400 mb-0.5">
+                                  <span>Hue ({hsb.h}°)</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="360"
+                                  value={hsb.h}
+                                  onChange={e => {
+                                    const newRgb = hsbToRgb(parseInt(e.target.value), hsb.s, hsb.b);
+                                    handleUpdateColor(
+                                      selectedTeam.id,
+                                      color.id,
+                                      'hex',
+                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
+                                    );
+                                  }}
+                                  className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex justify-between text-slate-400 mb-0.5">
+                                  <span>Saturation ({hsb.s}%)</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={hsb.s}
+                                  onChange={e => {
+                                    const newRgb = hsbToRgb(hsb.h, parseInt(e.target.value), hsb.b);
+                                    handleUpdateColor(
+                                      selectedTeam.id,
+                                      color.id,
+                                      'hex',
+                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
+                                    );
+                                  }}
+                                  className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex justify-between text-slate-400 mb-0.5">
+                                  <span>Brightness ({hsb.b}%)</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={hsb.b}
+                                  onChange={e => {
+                                    const newRgb = hsbToRgb(hsb.h, hsb.s, parseInt(e.target.value));
+                                    handleUpdateColor(
+                                      selectedTeam.id,
+                                      color.id,
+                                      'hex',
+                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
+                                    );
+                                  }}
+                                  className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Live Team Mockups */}
+                  <div className="space-y-4 pt-4 border-t border-slate-800">
+                    <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-cyan-400" />
+                      Live Team Assets Mockup Preview
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Shirt className="w-3.5 h-3.5 text-cyan-400" /> Uniform / Kit Concept
+                          </span>
+                          <span className="font-mono text-[10px]">Primary / Secondary Accent</span>
+                        </div>
+
+                        <div className="py-6 flex items-center justify-center bg-slate-900 rounded-xl relative overflow-hidden border border-slate-800">
+                          <div className="w-48 h-56 relative flex flex-col items-center justify-center rounded-2xl shadow-2xl transition-all duration-300" style={{ backgroundColor: selectedTeam.colors[0]?.hex || '#111' }}>
+                            <div className="absolute top-0 inset-x-0 h-10 flex">
+                              <div className="flex-1 h-full" style={{ backgroundColor: selectedTeam.colors[1]?.hex || '#333' }} />
+                              <div className="w-12 h-8 rounded-b-xl" style={{ backgroundColor: selectedTeam.colors[2]?.hex || '#555' }} />
+                              <div className="flex-1 h-full" style={{ backgroundColor: selectedTeam.colors[1]?.hex || '#333' }} />
+                            </div>
+
+                            <div className="z-10 text-center space-y-1">
+                              <p className="text-[10px] tracking-widest font-black uppercase" style={{ color: selectedTeam.colors[selectedTeam.colors.length - 1]?.hex || '#FFF' }}>
+                                {selectedTeam.team}
+                              </p>
+                              <p className="text-5xl font-black italic tracking-tighter" style={{ color: selectedTeam.colors[1]?.hex || '#FFF' }}>
+                                26
+                              </p>
+                            </div>
+
+                            <div className="absolute bottom-0 inset-x-4 h-3 rounded-t-lg flex gap-1">
+                              {selectedTeam.colors.map((c, i) => (
+                                <div key={i} className="flex-1 h-full" style={{ backgroundColor: c.hex }} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Layout className="w-3.5 h-3.5 text-cyan-400" /> Scoreboard Card UI
+                          </span>
+                          <span className="font-mono text-[10px]">Live Contrast Check</span>
+                        </div>
+
+                        <div
+                          className="p-5 rounded-xl shadow-xl space-y-3 border transition-colors"
+                          style={{
+                            backgroundColor: selectedTeam.colors[2]?.hex || '#111827',
+                            borderColor: selectedTeam.colors[1]?.hex || '#374151'
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className="text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                              style={{
+                                backgroundColor: selectedTeam.colors[0]?.hex || '#3B82F6',
+                                color: getBestTextColor(selectedTeam.colors[0]?.hex || '#3B82F6')
+                              }}
+                            >
+                              TRL GAMEDAY
+                            </span>
+                            <span
+                              className="text-xs font-mono"
+                              style={{ color: selectedTeam.colors[selectedTeam.colors.length - 1]?.hex || '#9CA3AF' }}
+                            >
+                              FINAL SCORE
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2">
+                            <div>
+                              <h4
+                                className="font-extrabold text-lg"
+                                style={{ color: selectedTeam.colors[selectedTeam.colors.length - 1]?.hex || '#FFF' }}
+                              >
+                                {selectedTeam.team}
+                              </h4>
+                              <p
+                                className="text-xs"
+                                style={{ color: selectedTeam.colors[1]?.hex || '#9CA3AF' }}
+                              >
+                                Primary Division
+                              </p>
+                            </div>
+                            <span
+                              className="text-3xl font-black font-mono"
+                              style={{ color: selectedTeam.colors[0]?.hex || '#3B82F6' }}
+                            >
+                              108
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 2: SPECTRUM ================= */}
+            {activeTab === 'spectrum' && (
+              <div className="space-y-6">
+                <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-4">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="relative w-full md:w-80">
+                      <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search color name, hex, team..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-400">Team:</span>
+                        <select
+                          value={spectrumTeamFilter}
+                          onChange={e => setSpectrumTeamFilter(e.target.value)}
+                          className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                        >
+                          <option value="ALL">All Teams ({teams.length})</option>
+                          {teams.map(t => (
+                            <option key={t.id} value={t.id}>
+                              {t.team}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-400">Sort:</span>
+                        <select
+                          value={spectrumSortBy}
+                          onChange={e => setSpectrumSortBy(e.target.value)}
+                          className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                        >
+                          <option value="hue">Hue Spectrum (0° - 360°)</option>
+                          <option value="brightness">Brightness (High to Low)</option>
+                          <option value="saturation">Saturation (High to Low)</option>
+                          <option value="name">Color Name A-Z</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                    <span className="text-slate-400 mr-2 shrink-0">Hue Bucket:</span>
+                    {[
+                      'ALL',
+                      'Reds & Maroons',
+                      'Oranges',
+                      'Yellows & Golds',
+                      'Greens',
+                      'Cyans & Aquas',
+                      'Blues',
+                      'Purples & Violets',
+                      'Neutrals & Greys'
+                    ].map(grp => (
+                      <button
+                        key={grp}
+                        onClick={() => setSpectrumGroupFilter(grp)}
+                        className={`px-3 py-1 rounded-lg transition whitespace-nowrap ${
+                          spectrumGroupFilter === grp
+                            ? 'bg-cyan-500 text-slate-950 font-bold'
+                            : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        {grp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {spectrumColors.map((color, idx) => {
+                    return (
+                      <div
+                        key={`${color.teamId}-${color.id}-${idx}`}
+                        className="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2.5 hover:border-cyan-500/50 transition group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div
+                            className="h-24 rounded-xl border border-slate-700/80 shadow-inner relative overflow-hidden transition-transform group-hover:scale-[1.02]"
+                            style={{ backgroundColor: color.hex }}
+                          >
+                            <span className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded border border-slate-700">
+                              {color.hex}
+                            </span>
+                          </div>
+
+                          <div className="mt-2.5">
+                            <h4 className="font-bold text-slate-100 text-xs truncate" title={color.name}>
+                              {color.name}
+                            </h4>
+                            <p className="text-[10px] text-cyan-400 font-medium truncate">{color.teamName}</p>
+                          </div>
+
+                          <div className="mt-1 space-y-0.5 text-[10px] font-mono text-slate-400">
+                            <p>RGB: {color.rgb.r}, {color.rgb.g}, {color.rgb.b}</p>
+                            <p>HSB: {color.hsb.h}°, {color.hsb.s}%, {color.hsb.b}%</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                          <span className="text-[9px] bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-800">
+                            {color.group}
+                          </span>
+                          <button
+                            onClick={() => handleCopy(color.hex, 'HEX')}
+                            className="p-1 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded transition"
+                            title="Copy Hex"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 3: COMPARE ================= */}
+            {activeTab === 'compare' && (
+              <div className="max-w-5xl mx-auto space-y-8">
+                <div className="bg-slate-900/60 p-6 rounded-3xl border border-slate-800 space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Sliders className="w-5 h-5 text-cyan-400" />
+                        2-Color Comparison Workspace
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        Compare any two colors from TRL teams or custom pickers for contrast & readability.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                      <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider block">
+                        Color A (Foreground / Primary)
+                      </label>
+
+                      <select
+                        onChange={e => {
+                          const found = allLeagueColors.find(c => `${c.teamName} - ${c.name}` === e.target.value);
+                          if (found) {
+                            setCompareColorA({ name: `${found.teamName} - ${found.name}`, hex: found.hex });
+                          }
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="">-- Choose TRL Color --</option>
+                        {allLeagueColors.map((c, i) => (
+                          <option key={i} value={`${c.teamName} - ${c.name}`}>
+                            {c.teamName} : {c.name} ({c.hex})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <input
+                          type="color"
+                          value={compareColorA.hex}
+                          onChange={e => setCompareColorA({ ...compareColorA, hex: e.target.value.toUpperCase() })}
+                          className="w-10 h-10 rounded-xl cursor-pointer border border-slate-700 bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={compareColorA.hex}
+                          onChange={e => setCompareColorA({ ...compareColorA, hex: e.target.value.toUpperCase() })}
+                          className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500 w-32"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                      <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider block">
+                        Color B (Background / Secondary)
+                      </label>
+
+                      <select
+                        onChange={e => {
+                          const found = allLeagueColors.find(c => `${c.teamName} - ${c.name}` === e.target.value);
+                          if (found) {
+                            setCompareColorB({ name: `${found.teamName} - ${found.name}`, hex: found.hex });
+                          }
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="">-- Choose TRL Color --</option>
+                        {allLeagueColors.map((c, i) => (
+                          <option key={i} value={`${c.teamName} - ${c.name}`}>
+                            {c.teamName} : {c.name} ({c.hex})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <input
+                          type="color"
+                          value={compareColorB.hex}
+                          onChange={e => setCompareColorB({ ...compareColorB, hex: e.target.value.toUpperCase() })}
+                          className="w-10 h-10 rounded-xl cursor-pointer border border-slate-700 bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={compareColorB.hex}
+                          onChange={e => setCompareColorB({ ...compareColorB, hex: e.target.value.toUpperCase() })}
+                          className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500 w-32"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl h-48">
+                    <div
+                      className="p-6 flex flex-col justify-between transition-colors"
+                      style={{ backgroundColor: compareColorA.hex }}
+                    >
+                      <span
+                        className="text-xs font-bold font-mono px-2 py-1 rounded w-max"
+                        style={{
+                          backgroundColor: getBestTextColor(compareColorA.hex),
+                          color: compareColorA.hex
+                        }}
+                      >
+                        COLOR A: {compareColorA.hex}
+                      </span>
+                      <p className="font-extrabold text-2xl" style={{ color: getBestTextColor(compareColorA.hex) }}>
+                        {compareColorA.name}
+                      </p>
+                    </div>
+
+                    <div
+                      className="p-6 flex flex-col justify-between transition-colors"
+                      style={{ backgroundColor: compareColorB.hex }}
+                    >
+                      <span
+                        className="text-xs font-bold font-mono px-2 py-1 rounded w-max"
+                        style={{
+                          backgroundColor: getBestTextColor(compareColorB.hex),
+                          color: compareColorB.hex
+                        }}
+                      >
+                        COLOR B: {compareColorB.hex}
+                      </span>
+                      <p className="font-extrabold text-2xl" style={{ color: getBestTextColor(compareColorB.hex) }}>
+                        {compareColorB.name}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 4: IMAGE EXPORTER STUDIO ================= */}
+            {activeTab === 'export-image' && (
+              <div className="space-y-6">
+                <div className="bg-slate-900/60 p-6 rounded-3xl border border-slate-800 space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <FileImage className="w-5 h-5 text-cyan-400" />
+                        Palette Image Exporter Studio
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        Generate high-resolution PNG image swatches for a single team, selected teams, or the entire league.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleCopyImageToClipboard}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+                      >
+                        <Copy className="w-4 h-4 text-cyan-400" />
+                        <span>Copy Image</span>
+                      </button>
+
+                      <button
+                        onClick={handleDownloadImage}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download PNG Image</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left Settings Panel */}
+                    <div className="lg:col-span-5 space-y-6">
+                      {/* Scope Selector */}
+                      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                        <label className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
+                          1. Export Scope
+                        </label>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => setExportTeamScope('all')}
+                            className={`py-2 px-2 text-xs font-semibold rounded-xl border transition ${
+                              exportTeamScope === 'all'
+                                ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            All Teams ({teams.length})
+                          </button>
+                          <button
+                            onClick={() => setExportTeamScope('single')}
+                            className={`py-2 px-2 text-xs font-semibold rounded-xl border transition ${
+                              exportTeamScope === 'single'
+                                ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Single Team
+                          </button>
+                          <button
+                            onClick={() => setExportTeamScope('custom')}
+                            className={`py-2 px-2 text-xs font-semibold rounded-xl border transition ${
+                              exportTeamScope === 'custom'
+                                ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Multi-Select
+                          </button>
+                        </div>
+
+                        {/* Single Team Dropdown */}
+                        {exportTeamScope === 'single' && (
+                          <div className="pt-2">
+                            <select
+                              value={exportSingleTeamId}
+                              onChange={e => setExportSingleTeamId(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                            >
+                              {teams.map(t => (
+                                <option key={t.id} value={t.id}>
+                                  {t.team} ({t.colors.length} colors)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Custom Multi-Select Grid */}
+                        {exportTeamScope === 'custom' && (
+                          <div className="space-y-2 pt-2">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                              <span>Selected: {selectedCustomTeamIds.length} / {teams.length}</span>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setSelectedCustomTeamIds(teams.map(t => t.id))}
+                                  className="text-cyan-400 hover:underline"
+                                >
+                                  Select All
+                                </button>
+                                <span>•</span>
+                                <button
+                                  onClick={() => setSelectedCustomTeamIds([])}
+                                  className="text-cyan-400 hover:underline"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="max-h-48 overflow-y-auto space-y-1 pr-1 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+                              {teams.map(t => {
+                                const isChecked = selectedCustomTeamIds.includes(t.id);
+                                return (
+                                  <label
+                                    key={t.id}
+                                    onClick={() => {
+                                      if (isChecked) {
+                                        setSelectedCustomTeamIds(selectedCustomTeamIds.filter(id => id !== t.id));
+                                      } else {
+                                        setSelectedCustomTeamIds([...selectedCustomTeamIds, t.id]);
+                                      }
+                                    }}
+                                    className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer text-xs transition"
+                                  >
+                                    <span className={isChecked ? 'text-white font-medium' : 'text-slate-400'}>
+                                      {t.team}
+                                    </span>
+                                    {isChecked ? (
+                                      <CheckSquare className="w-4 h-4 text-cyan-400 shrink-0" />
+                                    ) : (
+                                      <Square className="w-4 h-4 text-slate-600 shrink-0" />
+                                    )}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Layout & Style Customizer */}
+                      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-4">
+                        <label className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
+                          2. Styling & Layout Controls
+                        </label>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-slate-400 block mb-1">Layout Preset:</span>
+                            <select
+                              value={exportLayout}
+                              onChange={e => setExportLayout(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:border-cyan-500"
+                            >
+                              <option value="grid">Grid Poster</option>
+                              <option value="stack">Detailed Stack</option>
+                              <option value="compact">Compact Stripes</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <span className="text-slate-400 block mb-1">Columns:</span>
+                            <select
+                              value={exportCols}
+                              onChange={e => setExportCols(parseInt(e.target.value, 10))}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:border-cyan-500"
+                            >
+                              <option value={1}>1 Column</option>
+                              <option value={2}>2 Columns</option>
+                              <option value={3}>3 Columns</option>
+                              <option value={4}>4 Columns</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-slate-400 block mb-1">Theme Color:</span>
+                            <select
+                              value={exportTheme}
+                              onChange={e => setExportTheme(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:border-cyan-500"
+                            >
+                              <option value="dark">Dark Slate</option>
+                              <option value="light">Pure Light</option>
+                              <option value="midnight">Midnight Black</option>
+                              <option value="navy">Deep Navy</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <span className="text-slate-400 block mb-1">Swatch Details:</span>
+                            <select
+                              value={exportDetail}
+                              onChange={e => setExportDetail(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:border-cyan-500"
+                            >
+                              <option value="full">Full (Name + Hex + RGB)</option>
+                              <option value="standard">Standard (Name + Hex)</option>
+                              <option value="minimal">Minimal (Swatches + Hex)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                          <div>
+                            <span className="text-slate-400 block mb-1">Resolution Scale:</span>
+                            <select
+                              value={exportScale}
+                              onChange={e => setExportScale(parseInt(e.target.value, 10))}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:border-cyan-500"
+                            >
+                              <option value={1}>1x Standard</option>
+                              <option value={2}>2x HD Crisp</option>
+                              <option value={3}>3x Ultra HD</option>
+                            </select>
+                          </div>
+
+                          <div className="flex flex-col justify-end">
+                            <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-900 rounded-xl border border-slate-800 text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={exportShowHeader}
+                                onChange={e => setExportShowHeader(e.target.checked)}
+                                className="accent-cyan-400"
+                              />
+                              <span>Include Header</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Title & Subtitle Customizer */}
+                        {exportShowHeader && (
+                          <div className="space-y-2 pt-2 border-t border-slate-800">
+                            <div>
+                              <span className="text-[11px] text-slate-400 block mb-1">Graphic Header Title:</span>
+                              <input
+                                type="text"
+                                value={exportTitle}
+                                onChange={e => setExportTitle(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:border-cyan-500"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-slate-400 block mb-1">Graphic Subtitle:</span>
+                              <input
+                                type="text"
+                                value={exportSubtitle}
+                                onChange={e => setExportSubtitle(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:border-cyan-500"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Live Canvas Preview */}
+                    <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span className="font-semibold text-slate-300 uppercase tracking-wider">
+                          Live Graphic Output Preview
+                        </span>
+                        <span className="font-mono text-[11px] bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg">
+                          Rendering {exportTeams.length} Team{exportTeams.length !== 1 ? 's' : ''} @ {exportScale}x Scale
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col items-center justify-center min-h-[420px] max-h-[620px] overflow-auto relative shadow-2xl">
+                        <canvas
+                          ref={canvasRef}
+                          className="max-w-full h-auto block rounded-xl shadow-2xl border border-slate-800/80 transition-all"
+                          style={{ maxHeight: '560px', objectFit: 'contain' }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 pt-2">
+                        <p className="text-xs text-slate-500">
+                          Clicking download generates a pixel-perfect PNG image ready for media guides and presentations.
+                        </p>
+
+                        <button
+                          onClick={handleDownloadImage}
+                          className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Save PNG Palette Sheet</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 5: EXPORT CODE ================= */}
+            {activeTab === 'export' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-slate-900/60 p-6 rounded-3xl border border-slate-800 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <Download className="w-5 h-5 text-cyan-400" />
+                      League Palette Code Exporter
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Export TRL color systems into CSS variables, Tailwind config snippets, SCSS, or JSON.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-300">CSS Custom Properties (--variables)</span>
+                      <button
+                        onClick={() => {
+                          const cssCode = teams
+                            .map(
+                              t =>
+                                `/* ${t.team} */\n` +
+                                t.colors
+                                  .map(
+                                    c =>
+                                      `--trl-${t.id}-${c.name
+                                        .toLowerCase()
+                                        .replace(/[^a-z0-9]/g, '-')}: ${c.hex};`
+                                  )
+                                  .join('\n')
+                            )
+                            .join('\n\n');
+                          handleCopy(cssCode, 'CSS Variables');
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy CSS Code
+                      </button>
+                    </div>
+
+                    <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-48 scrollbar-thin">
+                      {teams
+                        .map(
+                          t =>
+                            `/* ${t.team} */\n` +
+                            t.colors
+                              .map(
+                                c =>
+                                  `--trl-${t.id}-${c.name
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]/g, '-')}: ${c.hex};`
+                              )
+                              .join('\n')
+                        )
+                        .join('\n\n')}
+                    </pre>
+                  </div>
+
+                  <div className="space-y-2 pt-4 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-300">Tailwind CSS Color Config Object</span>
+                      <button
+                        onClick={() => {
+                          const twObj = {};
+                          teams.forEach(t => {
+                            twObj[t.id] = {};
+                            t.colors.forEach(c => {
+                              const key = c.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                              twObj[t.id][key] = c.hex;
+                            });
+                          });
+                          handleCopy(JSON.stringify({ theme: { extend: { colors: twObj } } }, null, 2), 'Tailwind Config');
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy Tailwind Config
+                      </button>
+                    </div>
+
+                    <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-cyan-300 overflow-x-auto max-h-48 scrollbar-thin">
+                      {JSON.stringify(
+                        {
+                          theme: {
+                            extend: {
+                              colors: teams.reduce((acc, t) => {
+                                acc[t.id] = t.colors.reduce((cAcc, c) => {
+                                  cAcc[c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')] = c.hex;
+                                  return cAcc;
+                                }, {});
+                                return acc;
+                              }, {})
+                            }
+                          }
+                        },
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    // Render App Component to DOM Root
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+
