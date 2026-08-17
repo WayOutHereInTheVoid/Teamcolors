@@ -315,6 +315,17 @@
     }
 
 
+
+    function getColorByRole(team, role, fallbackIndex) {
+      if (!team || !team.colors) return null;
+      const byRole = team.colors.find(c => c.role === role);
+      if (byRole) return byRole;
+      if (fallbackIndex >= 0 && fallbackIndex < team.colors.length) {
+        return team.colors[fallbackIndex];
+      }
+      return team.colors[0]; // ultimate fallback
+    }
+
     function calculateVibrationScore(colors) {
       const flagged = [];
       for (let i = 0; i < colors.length; i++) {
@@ -1948,13 +1959,200 @@
             )}
 
             {/* ================= TAB 2: EVALUATE ================= */}
-            {activeTab === 'evaluate' && (
-              <div className="space-y-6">
-                <div className="bg-slate-900/60 p-6 rounded-3xl border border-slate-800 text-center">
-                  <p className="text-slate-400">Evaluate tab content coming soon...</p>
+            {activeTab === 'evaluate' && (() => {
+              const evaluateTeam = teams.find(t => t.id === evaluateTeamId) || teams[0];
+              const primaryColor = getColorByRole(evaluateTeam, 'primary', 0);
+              const secondaryColor = getColorByRole(evaluateTeam, 'secondary', 1);
+              const accentColor = getColorByRole(evaluateTeam, 'accent', 2);
+
+              const hasRolesAssigned = evaluateTeam.colors.some(c => c.role);
+
+              // Abbreviation
+              const words = evaluateTeam.team.split(' ').filter(Boolean);
+              let abbr = '';
+              if (words.length === 1) {
+                abbr = words[0].slice(0, 3).toUpperCase();
+              } else {
+                abbr = words.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+              }
+
+              // Contrast
+              const bgRatio = getContrastRatio(primaryColor.hex, secondaryColor.hex);
+              let bgGrade = 'Legibility Risk';
+              let bgGradeColor = 'text-red-400';
+              if (bgRatio >= 4.5) { bgGrade = 'Broadcast Ready'; bgGradeColor = 'text-green-400'; }
+              else if (bgRatio >= 3.0) { bgGrade = 'Acceptable'; bgGradeColor = 'text-amber-400'; }
+
+              const pTextRatio = getContrastRatio(primaryColor.hex, getBestTextColor(primaryColor.hex) === '#000000' ? '#000000' : '#FFFFFF');
+              const sTextRatio = getContrastRatio(secondaryColor.hex, getBestTextColor(secondaryColor.hex) === '#000000' ? '#000000' : '#FFFFFF');
+
+              // Luminance Delta
+              const pLum = getRelativeLuminance(hexToRgb(primaryColor.hex));
+              const sLum = getRelativeLuminance(hexToRgb(secondaryColor.hex));
+              const lumDelta = Math.abs(pLum - sLum);
+
+              let lumNote = '';
+              let lumNoteColor = '';
+              if (lumDelta > 0.4) {
+                lumNote = 'Strong separation, reads clearly at field scale.';
+                lumNoteColor = 'text-green-400';
+              } else if (lumDelta >= 0.15) {
+                lumNote = 'Moderate contrast, stripe recommended.';
+                lumNoteColor = 'text-amber-400';
+              } else {
+                lumNote = 'Low contrast, accent stripe strongly recommended.';
+                lumNoteColor = 'text-red-400';
+              }
+
+              return (
+                <div className="space-y-6">
+                  {/* Selector Header */}
+                  <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                          <Eye className="w-5 h-5 text-cyan-400" />
+                          Evaluate Context
+                        </h2>
+                        <p className="text-sm text-slate-400">
+                          Review team colors in simulated broadcast and field environments.
+                        </p>
+                      </div>
+
+                      <div className="w-full sm:w-auto">
+                        <select
+                          value={evaluateTeamId}
+                          onChange={e => setEvaluateTeamId(e.target.value)}
+                          className="w-full sm:w-64 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 transition"
+                        >
+                          {teams.map(t => (
+                            <option key={t.id} value={t.id}>{t.team}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {!hasRolesAssigned && (
+                      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex items-start gap-3">
+                        <Info className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                        <div className="text-sm text-slate-300">
+                          <strong>Roles Unassigned:</strong> This team does not have defined color roles (Primary, Secondary, Accent).
+                          We are falling back to the first three colors. <span className="text-cyan-400 cursor-pointer hover:underline" onClick={() => { setActiveTab('teams'); setSelectedTeamId(evaluateTeam.id); }}>Edit team</span> to assign roles for better accuracy.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Score Bug Section */}
+                  <div className="bg-slate-900/60 p-5 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+                    <div>
+                      <h3 className="text-base font-bold text-white mb-1">Broadcast Score Bug</h3>
+                      <p className="text-xs text-slate-400">Evaluating contrast between primary container, secondary container, and text.</p>
+                    </div>
+
+                    <div className="flex w-full max-w-2xl mx-auto rounded-lg overflow-hidden shadow-xl shadow-black/50 font-bold tracking-tight">
+                      <div
+                        className="px-4 py-3 flex items-center justify-center text-lg sm:text-2xl"
+                        style={{ backgroundColor: primaryColor.hex, color: getBestTextColor(primaryColor.hex) }}
+                      >
+                        {abbr}
+                      </div>
+                      <div
+                        className="flex-1 px-4 py-3 flex items-center justify-start text-base sm:text-xl"
+                        style={{ backgroundColor: secondaryColor.hex, color: getBestTextColor(secondaryColor.hex) }}
+                      >
+                        {evaluateTeam.team}
+                      </div>
+                      <div
+                        className="px-5 py-3 flex items-center justify-center text-xl sm:text-3xl"
+                        style={{ backgroundColor: primaryColor.hex, color: getBestTextColor(primaryColor.hex) }}
+                      >
+                        24
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800/50">
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Primary vs Secondary</div>
+                        <div className="text-2xl font-light text-white mb-1">{bgRatio.toFixed(2)}:1</div>
+                        <div className={`text-xs font-bold uppercase ${bgGradeColor}`}>{bgGrade}</div>
+                      </div>
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Primary Text</div>
+                        <div className="text-2xl font-light text-white mb-1">{pTextRatio.toFixed(2)}:1</div>
+                        <div className={`text-xs font-bold uppercase ${pTextRatio >= 4.5 ? 'text-green-400' : 'text-amber-400'}`}>
+                          {pTextRatio >= 4.5 ? 'Pass' : 'Warning'}
+                        </div>
+                      </div>
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Secondary Text</div>
+                        <div className="text-2xl font-light text-white mb-1">{sTextRatio.toFixed(2)}:1</div>
+                        <div className={`text-xs font-bold uppercase ${sTextRatio >= 4.5 ? 'text-green-400' : 'text-amber-400'}`}>
+                          {sTextRatio >= 4.5 ? 'Pass' : 'Warning'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Endzone Mockup Section */}
+                  <div className="bg-slate-900/60 p-5 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-base font-bold text-white mb-1">Endzone / Field Layout</h3>
+                        <p className="text-xs text-slate-400">Simulating large-scale color separation.</p>
+                      </div>
+                      <button
+                        onClick={() => setEndzoneShowAccent(!endzoneShowAccent)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                          endzoneShowAccent
+                            ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50'
+                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {endzoneShowAccent ? 'Hide Accent Stripe' : 'Show Accent Stripe'}
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row w-full h-64 sm:h-48 rounded-xl overflow-hidden shadow-xl shadow-black/50 border border-slate-800">
+                      <div
+                        className="flex-1 flex flex-col items-center justify-center p-6 text-center"
+                        style={{ backgroundColor: primaryColor.hex, color: getBestTextColor(primaryColor.hex) }}
+                      >
+                        <div className="font-bold text-2xl uppercase tracking-widest">{primaryColor.name}</div>
+                        <div className="text-sm opacity-80 mt-1 font-mono">{primaryColor.hex}</div>
+                      </div>
+
+                      {/* Divider Stripe */}
+                      <div
+                        className="w-full sm:w-3 h-3 sm:h-full shrink-0"
+                        style={{ backgroundColor: endzoneShowAccent ? accentColor.hex : '#FFFFFF' }}
+                      />
+
+                      <div
+                        className="flex-1 flex flex-col items-center justify-center p-6 text-center"
+                        style={{ backgroundColor: secondaryColor.hex, color: getBestTextColor(secondaryColor.hex) }}
+                      >
+                        <div className="font-bold text-2xl uppercase tracking-widest">{secondaryColor.name}</div>
+                        <div className="text-sm opacity-80 mt-1 font-mono">{secondaryColor.hex}</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Luminance Delta</div>
+                        <div className="flex items-end gap-2">
+                          <span className="text-2xl font-light text-white leading-none">{lumDelta.toFixed(3)}</span>
+                        </div>
+                      </div>
+                      <div className={`text-sm font-medium ${lumNoteColor} sm:text-right`}>
+                        {lumNote}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+
 
             {/* ================= TAB 3: SPECTRUM ================= */}
             {activeTab === 'spectrum' && (
