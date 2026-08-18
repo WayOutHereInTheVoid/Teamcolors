@@ -1535,6 +1535,52 @@
         }
       };
 
+    const { matrixTeams, conflictPairs, seenPairs, distances } = useMemo(() => {
+      const mappedTeams = [...teams].map(t => ({
+        ...t,
+        primaryHex: getTeamPrimaryColor(t)
+      }));
+
+      if (matrixSortOrder === 'alphabetical') {
+        mappedTeams.sort((a, b) => (a.team || "").localeCompare(b.team || ""));
+      } else if (matrixSortOrder === 'hue') {
+        mappedTeams.sort((a, b) => {
+          const hsbA = rgbToHsb(...Object.values(hexToRgb(a.primaryHex)));
+          const hsbB = rgbToHsb(...Object.values(hexToRgb(b.primaryHex)));
+          return hsbA.h - hsbB.h;
+        });
+      }
+
+      const dists = {};
+      const pairs = [];
+      const seen = new Set();
+
+      for (let i = 0; i < mappedTeams.length; i++) {
+        for (let j = 0; j < mappedTeams.length; j++) {
+          if (i === j) continue;
+          const tA = mappedTeams[i];
+          const tB = mappedTeams[j];
+          const key1 = `${tA.id}-${tB.id}`;
+          const key2 = `${tB.id}-${tA.id}`;
+
+          if (!dists[key1]) {
+            const dist = calculateColorDistance(tA.primaryHex, tB.primaryHex);
+            dists[key1] = dist;
+            dists[key2] = dist;
+
+            if (i < j && dist < 20 && !seen.has(key1) && !seen.has(key2)) {
+              pairs.push({ tA, tB, dist });
+              seen.add(key1);
+              seen.add(key2);
+            }
+          }
+        }
+      }
+      pairs.sort((a, b) => a.dist - b.dist);
+
+      return { matrixTeams: mappedTeams, conflictPairs: pairs, seenPairs: seen, distances: dists };
+    }, [teams, matrixSortOrder]);
+
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
           {/* Toast Notification */}
@@ -3288,51 +3334,7 @@ ${breakdownText}`}
             {/* ================= TAB: CONFLICT MATRIX ================= */}
             {activeTab === 'matrix' && (() => {
 
-              const { matrixTeams, conflictPairs, seenPairs, distances } = useMemo(() => {
-                const mappedTeams = [...teams].map(t => ({
-                  ...t,
-                  primaryHex: getTeamPrimaryColor(t)
-                }));
 
-                if (matrixSortOrder === 'alphabetical') {
-                  mappedTeams.sort((a, b) => (a.team || "").localeCompare(b.team || ""));
-                } else if (matrixSortOrder === 'hue') {
-                  mappedTeams.sort((a, b) => {
-                    const hsbA = rgbToHsb(...Object.values(hexToRgb(a.primaryHex)));
-                    const hsbB = rgbToHsb(...Object.values(hexToRgb(b.primaryHex)));
-                    return hsbA.h - hsbB.h;
-                  });
-                }
-
-                const dists = {};
-                const pairs = [];
-                const seen = new Set();
-
-                for (let i = 0; i < mappedTeams.length; i++) {
-                  for (let j = 0; j < mappedTeams.length; j++) {
-                    if (i === j) continue;
-                    const tA = mappedTeams[i];
-                    const tB = mappedTeams[j];
-                    const key1 = `${tA.id}-${tB.id}`;
-                    const key2 = `${tB.id}-${tA.id}`;
-
-                    if (!dists[key1]) {
-                      const dist = calculateColorDistance(tA.primaryHex, tB.primaryHex);
-                      dists[key1] = dist;
-                      dists[key2] = dist;
-
-                      if (i < j && dist < 20 && !seen.has(key1) && !seen.has(key2)) {
-                        pairs.push({ tA, tB, dist });
-                        seen.add(key1);
-                        seen.add(key2);
-                      }
-                    }
-                  }
-                }
-                pairs.sort((a, b) => a.dist - b.dist);
-
-                return { matrixTeams: mappedTeams, conflictPairs: pairs, seenPairs: seen, distances: dists };
-              }, [teams, matrixSortOrder]);
 
               const getBgColorClass = (dist) => {
                 if (dist < 20) return 'bg-red-500/70';
