@@ -385,6 +385,61 @@
       return { label, flagged, count: flagged.length };
     }
 
+    function calculatePaletteHealthScore(team) {
+      if (!team || !team.colors) return { total: 0, breakdown: { roles: 0, vibration: 0, contrast: 0, away: 0 } };
+
+      // A. Role Completeness
+      let rolesScore = 0;
+      const rolesToFind = ['dominant', 'secondary', 'accent', 'neutral'];
+      const foundRoles = new Set();
+      team.colors.forEach(c => {
+        if (c.role && rolesToFind.includes(c.role)) {
+          foundRoles.add(c.role);
+        }
+      });
+      rolesScore = foundRoles.size * 6.25;
+
+      // B. Vibration Risk
+      let vibrationScore = 0;
+      const vibrationData = calculateVibrationScore(team.colors);
+      if (vibrationData.count > 2) {
+        vibrationScore = 0;
+      } else if (vibrationData.label === 'clean') {
+        vibrationScore = 25;
+      } else if (vibrationData.label === 'watch') {
+        vibrationScore = 15;
+      } else if (vibrationData.label === 'friction') {
+        vibrationScore = 5;
+      }
+
+      // C. Broadcast Contrast
+      let contrastScore = 0;
+      const dominant = getColorByRole(team, 'dominant', 0);
+      const secondary = getColorByRole(team, 'secondary', 1);
+
+      if (dominant && secondary) {
+        const ratio = getContrastRatio(dominant.hex, secondary.hex);
+        if (ratio >= 7.0) contrastScore = 25;
+        else if (ratio >= 4.5) contrastScore = 18;
+        else if (ratio >= 3.0) contrastScore = 10;
+        else contrastScore = 0;
+      }
+
+      // D. Away Swap Viability
+      let awayScore = 0;
+      if (secondary) {
+        const awayRatio = getContrastRatio(secondary.hex, '#FFFFFF');
+        if (awayRatio >= 4.5) awayScore = 25;
+        else if (awayRatio >= 3.0) awayScore = 15;
+        else if (awayRatio >= 2.0) awayScore = 8;
+        else awayScore = 0;
+      }
+
+      const total = rolesScore + vibrationScore + contrastScore + awayScore;
+
+      return { total, breakdown: { roles: rolesScore, vibration: vibrationScore, contrast: contrastScore, away: awayScore } };
+    }
+
     function getHueGroup(hex) {
       const rgb = hexToRgb(hex);
       const { h, s, b } = rgbToHsb(rgb.r, rgb.g, rgb.b);
@@ -698,6 +753,14 @@
         const scores = {};
         teams.forEach(t => {
           scores[t.id] = calculateVibrationScore(t.colors);
+        });
+        return scores;
+      }, [teams]);
+
+      const paletteHealthScores = useMemo(() => {
+        const scores = {};
+        teams.forEach(t => {
+          scores[t.id] = calculatePaletteHealthScore(t);
         });
         return scores;
       }, [teams]);
@@ -1331,6 +1394,25 @@
                                   </button>
                                 );
                               })()}
+                              {(() => {
+                                const phs = paletteHealthScores[team.id];
+                                let badgeColor = 'bg-red-500/20 text-red-400 border-red-500/30';
+                                if (phs.total >= 75) badgeColor = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                                else if (phs.total >= 50) badgeColor = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+
+                                const breakdownText = `Roles: ${phs.breakdown.roles} · Vibration: ${phs.breakdown.vibration} · Contrast: ${phs.breakdown.contrast} · Away: ${phs.breakdown.away}`;
+
+                                return (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedTeamId(team.id); }}
+                                    className={`min-w-[44px] min-h-[44px] px-2 flex items-center justify-center text-[10px] font-mono font-bold tracking-wider rounded-xl border ${badgeColor}`}
+                                    title={`Palette Health Score Breakdown:
+${breakdownText}`}
+                                  >
+                                    {Math.round(phs.total)} PHS
+                                  </button>
+                                );
+                              })()}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1462,6 +1544,28 @@
                           Move & Tune Palette • {selectedTeam.colors.length} Active Swatches
                           {selectedTeam.note && <span className="text-amber-400 ml-2">({selectedTeam.note})</span>}
                         </p>
+
+                        {(() => {
+                          const phs = paletteHealthScores[selectedTeam.id];
+                          if (!phs) return null;
+                          let badgeColor = 'text-red-400';
+                          if (phs.total >= 75) badgeColor = 'text-emerald-400';
+                          else if (phs.total >= 50) badgeColor = 'text-amber-400';
+
+                          return (
+                            <div className="flex items-center gap-3 mt-1.5 text-[11px] font-mono">
+                              <span className={`font-bold ${badgeColor}`}>{Math.round(phs.total)} PHS Total</span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Roles: <span className="text-slate-300">{phs.breakdown.roles}</span></span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Vibration: <span className="text-slate-300">{phs.breakdown.vibration}</span></span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Contrast: <span className="text-slate-300">{phs.breakdown.contrast}</span></span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Away: <span className="text-slate-300">{phs.breakdown.away}</span></span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
