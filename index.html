@@ -599,6 +599,154 @@
       return updated;
     }
 
+    // --- MOOD CHART COMPONENT ---
+    function ColorMoodChart({ colors, dominantHex }) {
+      const data = useMemo(() => {
+        if (!colors || colors.length === 0) return [0, 0, 0, 0, 0];
+
+        // 1. Saturation
+        let sumS = 0;
+        let minB = 100, maxB = 0;
+        const hues = [];
+        let warmCount = 0;
+        let chromaticCount = 0;
+
+        colors.forEach(c => {
+          const rgb = hexToRgb(c.hex);
+          const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+          sumS += hsb.s;
+          if (hsb.b < minB) minB = hsb.b;
+          if (hsb.b > maxB) maxB = hsb.b;
+
+          hues.push(hsb.h);
+
+          if (hsb.s >= 15) {
+            chromaticCount++;
+            if ((hsb.h >= 0 && hsb.h <= 60) || (hsb.h >= 300 && hsb.h <= 360)) {
+              warmCount++;
+            }
+          }
+        });
+
+        const avgSat = Math.round(sumS / colors.length);
+
+        // 2. Brightness Range
+        const brightRange = maxB - minB;
+
+        // 3. Hue Spread
+        hues.sort((a, b) => a - b);
+        let maxGap = 0;
+        for (let i = 0; i < hues.length; i++) {
+          const next = hues[(i + 1) % hues.length];
+          let gap = next - hues[i];
+          if (gap < 0) gap += 360;
+          if (gap > maxGap) maxGap = gap;
+        }
+        const spread = 360 - maxGap;
+        const hueScore = Math.min(100, Math.round((spread / 180) * 100));
+
+        // 4. Contrast Range
+        let minRatio = Infinity;
+        let maxRatio = 0;
+        for (let i = 0; i < colors.length; i++) {
+          for (let j = i + 1; j < colors.length; j++) {
+            const ratio = getContrastRatio(colors[i].hex, colors[j].hex);
+            if (ratio < minRatio) minRatio = ratio;
+            if (ratio > maxRatio) maxRatio = ratio;
+          }
+        }
+        if (minRatio === Infinity) minRatio = 1;
+        const ratioRange = maxRatio - minRatio;
+        const contrastScore = Math.min(100, Math.round((ratioRange / 20) * 100));
+
+        // 5. Warmth Ratio
+        const warmthScore = chromaticCount === 0 ? 50 : Math.round((warmCount / chromaticCount) * 100);
+
+        return [avgSat, brightRange, hueScore, contrastScore, warmthScore];
+      }, [colors]);
+
+      const cx = 130;
+      const cy = 130;
+      const r = 100;
+      const angles = [
+        -Math.PI / 2,
+        -Math.PI / 2 + (2 * Math.PI) / 5,
+        -Math.PI / 2 + (4 * Math.PI) / 5,
+        -Math.PI / 2 + (6 * Math.PI) / 5,
+        -Math.PI / 2 + (8 * Math.PI) / 5,
+      ];
+
+      const getPoint = (val, i) => {
+        const dist = (val / 100) * r;
+        return `${cx + dist * Math.cos(angles[i])},${cy + dist * Math.sin(angles[i])}`;
+      };
+
+      const labels = ["Saturation", "Brightness", "Hue Spread", "Contrast", "Warmth"];
+
+      const getLabelPos = (i) => {
+        const dist = r + 40; // Increased distance to prevent clipping
+        return {
+          x: cx + dist * Math.cos(angles[i]),
+          y: cy + dist * Math.sin(angles[i])
+        };
+      };
+
+      const polyPoints = data.map((val, i) => getPoint(val, i)).join(" ");
+      const midPoints = [50, 50, 50, 50, 50].map((val, i) => getPoint(val, i)).join(" ");
+      const maxPoints = [100, 100, 100, 100, 100].map((val, i) => getPoint(val, i)).join(" ");
+
+      return (
+        <div className="flex flex-col items-center">
+          <svg width="260" height="260" viewBox="-80 -60 420 380" style={{ maxWidth: '100%', height: 'auto', overflow: 'visible' }}>
+            {/* Guide Polygons */}
+            <polygon points={maxPoints} fill="none" stroke="#334155" strokeWidth="1" opacity="0.5" />
+            <polygon points={midPoints} fill="none" stroke="#475569" strokeDasharray="4 4" strokeWidth="1" opacity="0.5" />
+
+            {/* Axes */}
+            {angles.map((ang, i) => (
+              <line key={`axis-${i}`} x1={cx} y1={cy} x2={cx + r * Math.cos(ang)} y2={cy + r * Math.sin(ang)} stroke="#334155" strokeWidth="1" opacity="0.5" />
+            ))}
+
+            {/* Data Polygon */}
+            <polygon
+              points={polyPoints}
+              fill={dominantHex}
+              fillOpacity="0.3"
+              stroke={dominantHex}
+              strokeWidth="2"
+              strokeOpacity="0.8"
+              strokeLinejoin="round"
+            />
+
+            {/* Vertices */}
+            {data.map((val, i) => {
+              const pt = getPoint(val, i).split(',');
+              return (
+                <circle key={`pt-${i}`} cx={pt[0]} cy={pt[1]} r="4" fill={dominantHex} stroke="#0f172a" strokeWidth="1.5" />
+              );
+            })}
+
+            {/* Labels */}
+            {labels.map((lbl, i) => {
+              const pos = getLabelPos(i);
+              let textAnchor = "middle";
+              if (Math.cos(angles[i]) > 0.1) textAnchor = "start";
+              if (Math.cos(angles[i]) < -0.1) textAnchor = "end";
+              let yOffset = Math.sin(angles[i]) > 0.1 ? 10 : (Math.sin(angles[i]) < -0.1 ? -5 : 4);
+
+              return (
+                <g key={`lbl-${i}`}>
+                  <text x={pos.x} y={pos.y + yOffset} fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor={textAnchor} className="font-sans uppercase tracking-wider">{lbl}</text>
+                  <text x={pos.x} y={pos.y + yOffset + 12} fill="#e2e8f0" fontSize="11" fontWeight="700" textAnchor={textAnchor} className="font-mono">{data[i]}</text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      );
+    }
+
     // --- MAIN APP COMPONENT ---
     function App() {
       const [teams, setTeams] = useState(INITIAL_LEAGUE_DATA.teams);
@@ -1899,6 +2047,26 @@ ${breakdownText}`}
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* Palette Mood Profile Section */}
+                  <div className="space-y-4 pt-4 border-t border-slate-800">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-cyan-400" />
+                        Palette Mood Profile
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        A visual fingerprint of the palette's characteristics across 5 perceptual dimensions.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex justify-center items-center">
+                      <ColorMoodChart
+                        colors={selectedTeam.colors}
+                        dominantHex={getColorByRole(selectedTeam, 'dominant', 0)?.hex || '#00CAFF'}
+                      />
                     </div>
                   </div>
 
