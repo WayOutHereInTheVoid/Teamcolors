@@ -98,6 +98,7 @@
     const FileImage = lucideObj.FileImage || lucideObj.Image || createIcon(<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/></>);
     const AlertTriangle = lucideObj.AlertTriangle || createIcon(<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>);
     const Link2 = lucideObj.Link2 || createIcon(<><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></>);
+    const ArrowRight = lucideObj.ArrowRight || createIcon(<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>);
     const Link2Off = lucideObj.Link2Off || createIcon(<><path d="M9 17H7A5 5 0 0 1 7 7"/><path d="M15 7h2a5 5 0 0 1 4 8"/><line x1="8" x2="12" y1="12" y2="12"/><line x1="2" x2="22" y1="2" y2="22"/></>);
     const CheckSquare = lucideObj.CheckSquare || createIcon(<><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>);
     const Square = lucideObj.Square || createIcon(<rect width="18" height="18" x="3" y="3" rx="2"/>);
@@ -438,6 +439,44 @@
       const total = rolesScore + vibrationScore + contrastScore + awayScore;
 
       return { total, breakdown: { roles: rolesScore, vibration: vibrationScore, contrast: contrastScore, away: awayScore } };
+    }
+
+    function getDesaturationSuggestions(flaggedPairs) {
+      if (!flaggedPairs || flaggedPairs.length === 0) return [];
+
+      return flaggedPairs.map(pair => {
+        let candidateColor;
+        let partnerColor;
+        let targetHsb;
+
+        if (pair.hsb1.s > pair.hsb2.s) {
+          candidateColor = pair.c1;
+          partnerColor = pair.c2;
+          targetHsb = { ...pair.hsb1 };
+        } else {
+          candidateColor = pair.c2;
+          partnerColor = pair.c1;
+          targetHsb = { ...pair.hsb2 };
+        }
+
+        const originalSaturation = targetHsb.s;
+
+        const reductionNeeded = targetHsb.s - 69;
+        const reductionAmount = Math.min(20, reductionNeeded > 0 ? reductionNeeded : 0);
+
+        targetHsb.s = Math.max(0, targetHsb.s - reductionAmount);
+
+        const targetRgb = hsbToRgb(targetHsb.h, targetHsb.s, targetHsb.b);
+        const suggestedHex = rgbToHex(targetRgb.r, targetRgb.g, targetRgb.b);
+
+        return {
+          originalColor: candidateColor,
+          partnerColor: partnerColor,
+          originalSaturation: Math.round(originalSaturation),
+          targetSaturation: Math.round(targetHsb.s),
+          suggestedHex: suggestedHex
+        };
+      });
     }
 
     function getHueGroup(hex) {
@@ -1985,6 +2024,34 @@ ${breakdownText}`}
                               </div>
                             </div>
                           ))}
+                        </div>
+
+                        <div className="pt-4 border-t border-amber-500/30">
+                          <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">Desaturation Suggestions</h4>
+                          <div className="space-y-2">
+                            {getDesaturationSuggestions(vibe.flagged).map((sugg, idx) => (
+                              <div key={`sugg-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-5 h-5 rounded-md border border-slate-700 shrink-0" style={{ backgroundColor: sugg.originalColor.hex }} />
+                                  <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" />
+                                  <div className="w-5 h-5 rounded-md border border-slate-700 shrink-0" style={{ backgroundColor: sugg.suggestedHex }} />
+                                  <div className="flex flex-col ml-1">
+                                    <span className="text-[11px] font-mono text-emerald-400">{sugg.suggestedHex}</span>
+                                    <span className="text-[10px] text-slate-400">
+                                      <span className="text-white font-medium">{sugg.originalColor.name}</span> — reduce saturation from {sugg.originalSaturation}% to {sugg.targetSaturation}%
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleUpdateColor(selectedTeam.id, sugg.originalColor.id, 'hex', sugg.suggestedHex)}
+                                  className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg transition"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Apply
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     );
