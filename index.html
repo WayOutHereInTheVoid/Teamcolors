@@ -330,6 +330,49 @@
       };
     }
 
+    function simulateFinish(hex, finish) {
+      if (!hex) return {};
+
+      const rgb = hexToRgb(hex);
+      const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+      if (finish === 'metallic') {
+        const lightenedHsb = { ...hsb, b: Math.min(100, hsb.b + 15) };
+        const darkenedHsb = { ...hsb, b: Math.max(0, hsb.b - 20) };
+
+        const lightenedRgb = hsbToRgb(lightenedHsb.h, lightenedHsb.s, lightenedHsb.b);
+        const darkenedRgb = hsbToRgb(darkenedHsb.h, darkenedHsb.s, darkenedHsb.b);
+
+        const lightenedHex = rgbToHex(lightenedRgb.r, lightenedRgb.g, lightenedRgb.b);
+        const darkenedHex = rgbToHex(darkenedRgb.r, darkenedRgb.g, darkenedRgb.b);
+
+        return {
+          background: `linear-gradient(135deg, ${lightenedHex} 0%, ${hex} 45%, ${darkenedHex} 100%)`,
+          boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 4px rgba(0, 0, 0, 0.3)'
+        };
+      }
+
+      if (finish === 'matte') {
+        const adjustedHsb = {
+          ...hsb,
+          s: Math.max(0, hsb.s - 8),
+          b: Math.max(0, hsb.b - 5)
+        };
+        const adjustedRgb = hsbToRgb(adjustedHsb.h, adjustedHsb.s, adjustedHsb.b);
+        const adjustedHex = rgbToHex(adjustedRgb.r, adjustedRgb.g, adjustedRgb.b);
+
+        return {
+          background: adjustedHex,
+          filter: 'contrast(0.92) brightness(0.95)'
+        };
+      }
+
+      // Default / flat
+      return {
+        background: hex
+      };
+    }
+
     function getRelativeLuminance({ r, g, b }) {
       const a = [r, g, b].map(v => {
         v /= 255;
@@ -755,6 +798,9 @@
       const [selectedTeamId, setSelectedTeamId] = useState(null);
       const [toastMessage, setToastMessage] = useState(null);
 
+      // Detail Modal: Local Finish Preview State
+      const [colorFinishes, setColorFinishes] = useState({});
+
       // Drag and Drop state inside Modal
       const [draggedIdx, setDraggedIdx] = useState(null);
       const [dragOverIdx, setDragOverIdx] = useState(null);
@@ -809,6 +855,7 @@
         setModalShowExport(false);
         setModalShowImport(false);
         setModalImportJson('');
+        setColorFinishes({});
       }, [selectedTeamId]);
 
       const canvasRef = useRef(null);
@@ -1879,21 +1926,28 @@ ${breakdownText}`}
                               </div>
 
                               {/* Color Picker Swatch */}
-                              <div className="relative shrink-0">
-                                <input
-                                  type="color"
-                                  value={color.hex.length === 7 ? color.hex : '#000000'}
-                                  onChange={e =>
-                                    handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
-                                  }
-                                  className="w-12 h-12 rounded-xl border border-slate-700 cursor-pointer overflow-hidden opacity-0 absolute inset-0 z-10"
-                                />
-                                <div
-                                  className="w-12 h-12 rounded-xl border border-slate-700 shadow-md flex items-center justify-center"
-                                  style={{ backgroundColor: color.hex }}
-                                >
-                                  <Sliders className="w-4 h-4 text-slate-900/60 drop-shadow" />
+                              <div className="relative shrink-0 flex flex-col items-center gap-1">
+                                <div className="relative w-12 h-12">
+                                  <input
+                                    type="color"
+                                    value={color.hex.length === 7 ? color.hex : '#000000'}
+                                    onChange={e =>
+                                      handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
+                                    }
+                                    className="w-full h-full rounded-xl border border-slate-700 cursor-pointer overflow-hidden opacity-0 absolute inset-0 z-10"
+                                  />
+                                  <div
+                                    className="w-full h-full rounded-xl border border-slate-700 shadow-md flex items-center justify-center transition-all duration-300"
+                                    style={simulateFinish(color.hex, colorFinishes[color.id] || 'flat')}
+                                  >
+                                    <Sliders className="w-4 h-4 text-slate-900/60 drop-shadow" />
+                                  </div>
                                 </div>
+                                {(colorFinishes[color.id] === 'matte' || colorFinishes[color.id] === 'metallic') && (
+                                  <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    {colorFinishes[color.id]} Preview
+                                  </span>
+                                )}
                               </div>
 
                               {/* Editable Name & Hex input */}
@@ -1933,6 +1987,28 @@ ${breakdownText}`}
                                     </button>
                                   )}
                                 </div>
+
+                                {/* Finish Toggle Group */}
+                                <div className="flex items-center gap-1 mt-1">
+                                  {['flat', 'matte', 'metallic'].map(finish => {
+                                    const isSelected = (colorFinishes[color.id] || 'flat') === finish;
+                                    return (
+                                      <button
+                                        key={finish}
+                                        onClick={() => setColorFinishes(prev => ({ ...prev, [color.id]: finish }))}
+                                        className={`flex-1 text-[10px] font-bold rounded px-1.5 py-1 border transition capitalize ${
+                                          isSelected
+                                            ? 'bg-slate-700 border-slate-600 text-white'
+                                            : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                                        }`}
+                                      >
+                                        {finish}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Role Toggles */}
                                 <div className="flex items-center gap-1 mt-1.5">
                                   {['primary', 'secondary', 'accent', 'neutral'].map(role => {
                                     const isActive = color.role === role;
