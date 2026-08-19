@@ -89,6 +89,7 @@
     const Shield = lucideObj.Shield || createIcon(<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>);
     const Shirt = lucideObj.Shirt || createIcon(<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>);
     const Layout = lucideObj.Layout || createIcon(<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></>);
+    const Grid = lucideObj.Grid || createIcon(<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></>);
     const Sparkles = lucideObj.Sparkles || createIcon(<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/>);
     const Info = lucideObj.Info || createIcon(<><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></>);
     const CheckCircle2 = lucideObj.CheckCircle2 || createIcon(<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>);
@@ -98,9 +99,14 @@
     const FileImage = lucideObj.FileImage || lucideObj.Image || createIcon(<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/></>);
     const AlertTriangle = lucideObj.AlertTriangle || createIcon(<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>);
     const Link2 = lucideObj.Link2 || createIcon(<><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></>);
+    const ArrowRight = lucideObj.ArrowRight || createIcon(<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>);
     const Link2Off = lucideObj.Link2Off || createIcon(<><path d="M9 17H7A5 5 0 0 1 7 7"/><path d="M15 7h2a5 5 0 0 1 4 8"/><line x1="8" x2="12" y1="12" y2="12"/><line x1="2" x2="22" y1="2" y2="22"/></>);
     const CheckSquare = lucideObj.CheckSquare || createIcon(<><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>);
     const Square = lucideObj.Square || createIcon(<rect width="18" height="18" x="3" y="3" rx="2"/>);
+    const History = lucideObj.History || createIcon(<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></>);
+    const Save = lucideObj.Save || createIcon(<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>);
+    const Clock = lucideObj.Clock || createIcon(<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>);
+    const Trash = lucideObj.Trash || createIcon(<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></>);
 
     // --- INITIAL LEAGUE DATA (SORTED ALPHABETICALLY BY TEAM NAME) ---
     const INITIAL_LEAGUE_DATA = {
@@ -329,12 +335,74 @@
       };
     }
 
+    function simulateFinish(hex, finish) {
+      if (!hex) return {};
+
+      const rgb = hexToRgb(hex);
+      const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+      if (finish === 'metallic') {
+        const lightenedHsb = { ...hsb, b: Math.min(100, hsb.b + 15) };
+        const darkenedHsb = { ...hsb, b: Math.max(0, hsb.b - 20) };
+
+        const lightenedRgb = hsbToRgb(lightenedHsb.h, lightenedHsb.s, lightenedHsb.b);
+        const darkenedRgb = hsbToRgb(darkenedHsb.h, darkenedHsb.s, darkenedHsb.b);
+
+        const lightenedHex = rgbToHex(lightenedRgb.r, lightenedRgb.g, lightenedRgb.b);
+        const darkenedHex = rgbToHex(darkenedRgb.r, darkenedRgb.g, darkenedRgb.b);
+
+        return {
+          background: `linear-gradient(135deg, ${lightenedHex} 0%, ${hex} 45%, ${darkenedHex} 100%)`,
+          boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 4px rgba(0, 0, 0, 0.3)'
+        };
+      }
+
+      if (finish === 'matte') {
+        const adjustedHsb = {
+          ...hsb,
+          s: Math.max(0, hsb.s - 8),
+          b: Math.max(0, hsb.b - 5)
+        };
+        const adjustedRgb = hsbToRgb(adjustedHsb.h, adjustedHsb.s, adjustedHsb.b);
+        const adjustedHex = rgbToHex(adjustedRgb.r, adjustedRgb.g, adjustedRgb.b);
+
+        return {
+          background: adjustedHex,
+          filter: 'contrast(0.92) brightness(0.95)'
+        };
+      }
+
+      // Default / flat
+      return {
+        background: hex
+      };
+    }
+
     function getRelativeLuminance({ r, g, b }) {
       const a = [r, g, b].map(v => {
         v /= 255;
         return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
       });
       return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+    }
+
+
+    function calculateColorDistance(hex1, hex2) {
+      if (!hex1 || !hex2) return 100;
+      const rgb1 = hexToRgb(hex1);
+      const rgb2 = hexToRgb(hex2);
+      if (!rgb1 || !rgb2) return 100;
+      const hsb1 = rgbToHsb(rgb1.r, rgb1.g, rgb1.b);
+      const hsb2 = rgbToHsb(rgb2.r, rgb2.g, rgb2.b);
+
+      const hueDist = Math.min(Math.abs(hsb1.h - hsb2.h), 360 - Math.abs(hsb1.h - hsb2.h));
+      const satDist = Math.abs(hsb1.s - hsb2.s);
+      const brightDist = Math.abs(hsb1.b - hsb2.b);
+
+      // weighted score: (hueDist / 180) * 60 + (satDist / 100) * 25 + (brightDist / 100) * 15
+      const score = (hueDist / 180) * 60 + (satDist / 100) * 25 + (brightDist / 100) * 15;
+
+      return Math.min(100, Math.max(0, score));
     }
 
     function getContrastRatio(hex1, hex2) {
@@ -348,6 +416,14 @@
     }
 
 
+
+
+    function getTeamPrimaryColor(team) {
+      if (!team || !team.colors || team.colors.length === 0) return null;
+      const dominant = team.colors.find(c => c.role === 'dominant');
+      if (dominant && dominant.hex) return dominant.hex;
+      return team.colors[0].hex;
+    }
 
     function getColorByRole(team, role, fallbackIndex) {
       if (!team || !team.colors) return null;
@@ -383,6 +459,151 @@
       }
 
       return { label, flagged, count: flagged.length };
+    }
+
+    function calculatePaletteHealthScore(team) {
+      if (!team || !team.colors) return { total: 0, breakdown: { roles: 0, vibration: 0, contrast: 0, away: 0 } };
+
+      // A. Role Completeness
+      let rolesScore = 0;
+      const rolesToFind = ['dominant', 'secondary', 'accent', 'neutral'];
+      const foundRoles = new Set();
+      team.colors.forEach(c => {
+        if (c.role && rolesToFind.includes(c.role)) {
+          foundRoles.add(c.role);
+        }
+      });
+      rolesScore = foundRoles.size * 6.25;
+
+      // B. Vibration Risk
+      let vibrationScore = 0;
+      const vibrationData = calculateVibrationScore(team.colors);
+      if (vibrationData.count > 2) {
+        vibrationScore = 0;
+      } else if (vibrationData.label === 'clean') {
+        vibrationScore = 25;
+      } else if (vibrationData.label === 'watch') {
+        vibrationScore = 15;
+      } else if (vibrationData.label === 'friction') {
+        vibrationScore = 5;
+      }
+
+      // C. Broadcast Contrast
+      let contrastScore = 0;
+      const dominant = getColorByRole(team, 'dominant', 0);
+      const secondary = getColorByRole(team, 'secondary', 1);
+
+      if (dominant && secondary) {
+        const ratio = getContrastRatio(dominant.hex, secondary.hex);
+        if (ratio >= 7.0) contrastScore = 25;
+        else if (ratio >= 4.5) contrastScore = 18;
+        else if (ratio >= 3.0) contrastScore = 10;
+        else contrastScore = 0;
+      }
+
+      // D. Away Swap Viability
+      let awayScore = 0;
+      if (secondary) {
+        const awayRatio = getContrastRatio(secondary.hex, '#FFFFFF');
+        if (awayRatio >= 4.5) awayScore = 25;
+        else if (awayRatio >= 3.0) awayScore = 15;
+        else if (awayRatio >= 2.0) awayScore = 8;
+        else awayScore = 0;
+      }
+
+      const total = rolesScore + vibrationScore + contrastScore + awayScore;
+
+      return { total, breakdown: { roles: rolesScore, vibration: vibrationScore, contrast: contrastScore, away: awayScore } };
+    }
+
+    function getDesaturationSuggestions(flaggedPairs) {
+      if (!flaggedPairs || flaggedPairs.length === 0) return [];
+
+      return flaggedPairs.map(pair => {
+        let candidateColor;
+        let partnerColor;
+        let targetHsb;
+
+        if (pair.hsb1.s > pair.hsb2.s) {
+          candidateColor = pair.c1;
+          partnerColor = pair.c2;
+          targetHsb = { ...pair.hsb1 };
+        } else {
+          candidateColor = pair.c2;
+          partnerColor = pair.c1;
+          targetHsb = { ...pair.hsb2 };
+        }
+
+        const originalSaturation = targetHsb.s;
+
+        const reductionNeeded = targetHsb.s - 69;
+        const reductionAmount = Math.min(20, reductionNeeded > 0 ? reductionNeeded : 0);
+
+        targetHsb.s = Math.max(0, targetHsb.s - reductionAmount);
+
+        const targetRgb = hsbToRgb(targetHsb.h, targetHsb.s, targetHsb.b);
+        const suggestedHex = rgbToHex(targetRgb.r, targetRgb.g, targetRgb.b);
+
+        return {
+          originalColor: candidateColor,
+          partnerColor: partnerColor,
+          originalSaturation: Math.round(originalSaturation),
+          targetSaturation: Math.round(targetHsb.s),
+          suggestedHex: suggestedHex
+        };
+      });
+    }
+
+    // --- SNAPSHOTS / VERSION HISTORY ---
+    function loadSnapshots() {
+      try {
+        const saved = localStorage.getItem('trl-color-studio-snapshots');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load snapshots", e);
+      }
+      return {};
+    }
+
+    function saveSnapshot(teamId, name, notes, colors) {
+      const allSnapshots = loadSnapshots();
+      const teamSnaps = allSnapshots[teamId] || [];
+
+      const newSnapshot = {
+        id: `snapshot-${Date.now()}`,
+        name: name || `Snapshot ${teamSnaps.length + 1}`,
+        timestamp: Date.now(),
+        notes: notes || "",
+        colors: JSON.parse(JSON.stringify(colors)) // deep copy
+      };
+
+      teamSnaps.unshift(newSnapshot);
+      if (teamSnaps.length > 12) {
+        teamSnaps.pop();
+      }
+
+      allSnapshots[teamId] = teamSnaps;
+
+      try {
+        localStorage.setItem('trl-color-studio-snapshots', JSON.stringify(allSnapshots));
+      } catch (e) {
+        console.error("Failed to save snapshots", e);
+      }
+      return allSnapshots;
+    }
+
+    function deleteSnapshot(teamId, snapshotId) {
+      const allSnapshots = loadSnapshots();
+      if (!allSnapshots[teamId]) return allSnapshots;
+
+      allSnapshots[teamId] = allSnapshots[teamId].filter(s => s.id !== snapshotId);
+
+      try {
+        localStorage.setItem('trl-color-studio-snapshots', JSON.stringify(allSnapshots));
+      } catch (e) {
+        console.error("Failed to delete snapshot", e);
+      }
+      return allSnapshots;
     }
 
     function getHueGroup(hex) {
@@ -505,13 +726,166 @@
       return updated;
     }
 
+    // --- MOOD CHART COMPONENT ---
+    function ColorMoodChart({ colors, dominantHex }) {
+      const data = useMemo(() => {
+        if (!colors || colors.length === 0) return [0, 0, 0, 0, 0];
+
+        // 1. Saturation
+        let sumS = 0;
+        let minB = 100, maxB = 0;
+        const hues = [];
+        let warmCount = 0;
+        let chromaticCount = 0;
+
+        colors.forEach(c => {
+          const rgb = hexToRgb(c.hex);
+          const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+          sumS += hsb.s;
+          if (hsb.b < minB) minB = hsb.b;
+          if (hsb.b > maxB) maxB = hsb.b;
+
+          hues.push(hsb.h);
+
+          if (hsb.s >= 15) {
+            chromaticCount++;
+            if ((hsb.h >= 0 && hsb.h <= 60) || (hsb.h >= 300 && hsb.h <= 360)) {
+              warmCount++;
+            }
+          }
+        });
+
+        const avgSat = Math.round(sumS / colors.length);
+
+        // 2. Brightness Range
+        const brightRange = maxB - minB;
+
+        // 3. Hue Spread
+        hues.sort((a, b) => a - b);
+        let maxGap = 0;
+        for (let i = 0; i < hues.length; i++) {
+          const next = hues[(i + 1) % hues.length];
+          let gap = next - hues[i];
+          if (gap < 0) gap += 360;
+          if (gap > maxGap) maxGap = gap;
+        }
+        const spread = 360 - maxGap;
+        const hueScore = Math.min(100, Math.round((spread / 180) * 100));
+
+        // 4. Contrast Range
+        let minRatio = Infinity;
+        let maxRatio = 0;
+        for (let i = 0; i < colors.length; i++) {
+          for (let j = i + 1; j < colors.length; j++) {
+            const ratio = getContrastRatio(colors[i].hex, colors[j].hex);
+            if (ratio < minRatio) minRatio = ratio;
+            if (ratio > maxRatio) maxRatio = ratio;
+          }
+        }
+        if (minRatio === Infinity) minRatio = 1;
+        const ratioRange = maxRatio - minRatio;
+        const contrastScore = Math.min(100, Math.round((ratioRange / 20) * 100));
+
+        // 5. Warmth Ratio
+        const warmthScore = chromaticCount === 0 ? 50 : Math.round((warmCount / chromaticCount) * 100);
+
+        return [avgSat, brightRange, hueScore, contrastScore, warmthScore];
+      }, [colors]);
+
+      const cx = 130;
+      const cy = 130;
+      const r = 100;
+      const angles = [
+        -Math.PI / 2,
+        -Math.PI / 2 + (2 * Math.PI) / 5,
+        -Math.PI / 2 + (4 * Math.PI) / 5,
+        -Math.PI / 2 + (6 * Math.PI) / 5,
+        -Math.PI / 2 + (8 * Math.PI) / 5,
+      ];
+
+      const getPoint = (val, i) => {
+        const dist = (val / 100) * r;
+        return `${cx + dist * Math.cos(angles[i])},${cy + dist * Math.sin(angles[i])}`;
+      };
+
+      const labels = ["Saturation", "Brightness", "Hue Spread", "Contrast", "Warmth"];
+
+      const getLabelPos = (i) => {
+        const dist = r + 40; // Increased distance to prevent clipping
+        return {
+          x: cx + dist * Math.cos(angles[i]),
+          y: cy + dist * Math.sin(angles[i])
+        };
+      };
+
+      const polyPoints = data.map((val, i) => getPoint(val, i)).join(" ");
+      const midPoints = [50, 50, 50, 50, 50].map((val, i) => getPoint(val, i)).join(" ");
+      const maxPoints = [100, 100, 100, 100, 100].map((val, i) => getPoint(val, i)).join(" ");
+
+      return (
+        <div className="flex flex-col items-center">
+          <svg width="260" height="260" viewBox="-80 -60 420 380" style={{ maxWidth: '100%', height: 'auto', overflow: 'visible' }}>
+            {/* Guide Polygons */}
+            <polygon points={maxPoints} fill="none" stroke="#334155" strokeWidth="1" opacity="0.5" />
+            <polygon points={midPoints} fill="none" stroke="#475569" strokeDasharray="4 4" strokeWidth="1" opacity="0.5" />
+
+            {/* Axes */}
+            {angles.map((ang, i) => (
+              <line key={`axis-${i}`} x1={cx} y1={cy} x2={cx + r * Math.cos(ang)} y2={cy + r * Math.sin(ang)} stroke="#334155" strokeWidth="1" opacity="0.5" />
+            ))}
+
+            {/* Data Polygon */}
+            <polygon
+              points={polyPoints}
+              fill={dominantHex}
+              fillOpacity="0.3"
+              stroke={dominantHex}
+              strokeWidth="2"
+              strokeOpacity="0.8"
+              strokeLinejoin="round"
+            />
+
+            {/* Vertices */}
+            {data.map((val, i) => {
+              const pt = getPoint(val, i).split(',');
+              return (
+                <circle key={`pt-${i}`} cx={pt[0]} cy={pt[1]} r="4" fill={dominantHex} stroke="#0f172a" strokeWidth="1.5" />
+              );
+            })}
+
+            {/* Labels */}
+            {labels.map((lbl, i) => {
+              const pos = getLabelPos(i);
+              let textAnchor = "middle";
+              if (Math.cos(angles[i]) > 0.1) textAnchor = "start";
+              if (Math.cos(angles[i]) < -0.1) textAnchor = "end";
+              let yOffset = Math.sin(angles[i]) > 0.1 ? 10 : (Math.sin(angles[i]) < -0.1 ? -5 : 4);
+
+              return (
+                <g key={`lbl-${i}`}>
+                  <text x={pos.x} y={pos.y + yOffset} fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor={textAnchor} className="font-sans uppercase tracking-wider">{lbl}</text>
+                  <text x={pos.x} y={pos.y + yOffset + 12} fill="#e2e8f0" fontSize="11" fontWeight="700" textAnchor={textAnchor} className="font-mono">{data[i]}</text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      );
+    }
+
     // --- MAIN APP COMPONENT ---
     function App() {
       const [teams, setTeams] = useState(INITIAL_LEAGUE_DATA.teams);
-      const [activeTab, setActiveTab] = useState('teams'); // 'teams', 'spectrum', 'compare', 'export-image', 'export'
+      const [activeTab, setActiveTab] = useState('teams'); // 'teams', 'spectrum', 'compare', 'matrix', 'export'
       const [searchQuery, setSearchQuery] = useState('');
       const [selectedTeamId, setSelectedTeamId] = useState(null);
       const [toastMessage, setToastMessage] = useState(null);
+      const [matrixSortOrder, setMatrixSortOrder] = useState('alphabetical'); // 'alphabetical', 'hue'
+      const [snapshots, setSnapshots] = useState(() => loadSnapshots());
+
+      // Detail Modal: Local Finish Preview State
+      const [colorFinishes, setColorFinishes] = useState({});
 
       // Drag and Drop state inside Modal
       const [draggedIdx, setDraggedIdx] = useState(null);
@@ -563,10 +937,18 @@
       const [modalShowImport, setModalShowImport] = useState(false);
       const [modalImportJson, setModalImportJson] = useState('');
 
+      const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+      const [newSnapshotName, setNewSnapshotName] = useState('');
+      const [newSnapshotNotes, setNewSnapshotNotes] = useState('');
+
       useEffect(() => {
         setModalShowExport(false);
         setModalShowImport(false);
         setModalImportJson('');
+        setColorFinishes({});
+        setIsHistoryExpanded(false);
+        setNewSnapshotName('');
+        setNewSnapshotNotes('');
       }, [selectedTeamId]);
 
       const canvasRef = useRef(null);
@@ -698,6 +1080,14 @@
         const scores = {};
         teams.forEach(t => {
           scores[t.id] = calculateVibrationScore(t.colors);
+        });
+        return scores;
+      }, [teams]);
+
+      const paletteHealthScores = useMemo(() => {
+        const scores = {};
+        teams.forEach(t => {
+          scores[t.id] = calculatePaletteHealthScore(t);
         });
         return scores;
       }, [teams]);
@@ -1145,6 +1535,52 @@
         }
       };
 
+    const { matrixTeams, conflictPairs, seenPairs, distances } = useMemo(() => {
+      const mappedTeams = [...teams].map(t => ({
+        ...t,
+        primaryHex: getTeamPrimaryColor(t)
+      }));
+
+      if (matrixSortOrder === 'alphabetical') {
+        mappedTeams.sort((a, b) => (a.team || "").localeCompare(b.team || ""));
+      } else if (matrixSortOrder === 'hue') {
+        mappedTeams.sort((a, b) => {
+          const hsbA = rgbToHsb(...Object.values(hexToRgb(a.primaryHex)));
+          const hsbB = rgbToHsb(...Object.values(hexToRgb(b.primaryHex)));
+          return hsbA.h - hsbB.h;
+        });
+      }
+
+      const dists = {};
+      const pairs = [];
+      const seen = new Set();
+
+      for (let i = 0; i < mappedTeams.length; i++) {
+        for (let j = 0; j < mappedTeams.length; j++) {
+          if (i === j) continue;
+          const tA = mappedTeams[i];
+          const tB = mappedTeams[j];
+          const key1 = `${tA.id}-${tB.id}`;
+          const key2 = `${tB.id}-${tA.id}`;
+
+          if (!dists[key1]) {
+            const dist = calculateColorDistance(tA.primaryHex, tB.primaryHex);
+            dists[key1] = dist;
+            dists[key2] = dist;
+
+            if (i < j && dist < 20 && !seen.has(key1) && !seen.has(key2)) {
+              pairs.push({ tA, tB, dist });
+              seen.add(key1);
+              seen.add(key2);
+            }
+          }
+        }
+      }
+      pairs.sort((a, b) => a.dist - b.dist);
+
+      return { matrixTeams: mappedTeams, conflictPairs: pairs, seenPairs: seen, distances: dists };
+    }, [teams, matrixSortOrder]);
+
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
           {/* Toast Notification */}
@@ -1176,7 +1612,7 @@
 
                 <button
                   onClick={handleResetAll}
-                  className="md:hidden p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+                  className="min-h-[44px] md:hidden p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
                   title="Reset All Palettes"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -1187,7 +1623,7 @@
               <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 w-full md:w-auto overflow-x-auto whitespace-nowrap">
                 <button
                   onClick={() => setActiveTab('teams')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                  className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'teams'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -1199,7 +1635,7 @@
 
                 <button
                   onClick={() => setActiveTab('evaluate')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                  className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'evaluate'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -1211,7 +1647,7 @@
 
                 <button
                   onClick={() => setActiveTab('spectrum')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                  className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'spectrum'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -1223,7 +1659,7 @@
 
                 <button
                   onClick={() => setActiveTab('compare')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                  className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'compare'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -1233,9 +1669,23 @@
                   <span>Compare</span>
                 </button>
 
+
+                <button
+                  onClick={() => setActiveTab('matrix')}
+                  className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === 'matrix'
+                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Grid className="w-4 h-4" />
+                  <span className="hidden sm:inline">Conflict Matrix</span>
+                  <span className="sm:hidden">Matrix</span>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('export')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                  className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'export'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -1248,7 +1698,7 @@
 
               <button
                 onClick={handleResetAll}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
+                className="min-h-[44px] hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-xs font-medium border border-slate-700 transition"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Reset All Defaults</span>
@@ -1328,6 +1778,25 @@
                                     title="Vibration Score (Tap for details)"
                                   >
                                     {vibe.label}
+                                  </button>
+                                );
+                              })()}
+                              {(() => {
+                                const phs = paletteHealthScores[team.id];
+                                let badgeColor = 'bg-red-500/20 text-red-400 border-red-500/30';
+                                if (phs.total >= 75) badgeColor = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                                else if (phs.total >= 50) badgeColor = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+
+                                const breakdownText = `Roles: ${phs.breakdown.roles} · Vibration: ${phs.breakdown.vibration} · Contrast: ${phs.breakdown.contrast} · Away: ${phs.breakdown.away}`;
+
+                                return (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedTeamId(team.id); }}
+                                    className={`min-w-[44px] min-h-[44px] px-2 flex items-center justify-center text-[10px] font-mono font-bold tracking-wider rounded-xl border ${badgeColor}`}
+                                    title={`Palette Health Score Breakdown:
+${breakdownText}`}
+                                  >
+                                    {Math.round(phs.total)} PHS
                                   </button>
                                 );
                               })()}
@@ -1462,6 +1931,28 @@
                           Move & Tune Palette • {selectedTeam.colors.length} Active Swatches
                           {selectedTeam.note && <span className="text-amber-400 ml-2">({selectedTeam.note})</span>}
                         </p>
+
+                        {(() => {
+                          const phs = paletteHealthScores[selectedTeam.id];
+                          if (!phs) return null;
+                          let badgeColor = 'text-red-400';
+                          if (phs.total >= 75) badgeColor = 'text-emerald-400';
+                          else if (phs.total >= 50) badgeColor = 'text-amber-400';
+
+                          return (
+                            <div className="flex items-center gap-3 mt-1.5 text-[11px] font-mono">
+                              <span className={`min-h-[44px] font-bold ${badgeColor}`}>{Math.round(phs.total)} PHS Total</span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Roles: <span className="text-slate-300">{phs.breakdown.roles}</span></span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Vibration: <span className="text-slate-300">{phs.breakdown.vibration}</span></span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Contrast: <span className="text-slate-300">{phs.breakdown.contrast}</span></span>
+                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-400">Away: <span className="text-slate-300">{phs.breakdown.away}</span></span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -1554,7 +2045,7 @@
                               setDraggedIdx(null);
                               setDragOverIdx(null);
                             }}
-                            className={`bg-slate-950 rounded-2xl border transition-all duration-200 p-4 space-y-4 shadow-sm relative ${
+                            className={`min-h-[44px] bg-slate-950 rounded-2xl border transition-all duration-200 p-4 space-y-4 shadow-sm relative ${
                               isBeingDragged ? 'opacity-40 border-dashed border-cyan-400 scale-[0.98]' : 'border-slate-800'
                             } ${
                               isOverTarget && !isBeingDragged ? 'border-cyan-400 bg-slate-900/90 scale-[1.01] shadow-lg shadow-cyan-500/10' : ''
@@ -1588,21 +2079,28 @@
                               </div>
 
                               {/* Color Picker Swatch */}
-                              <div className="relative shrink-0">
-                                <input
-                                  type="color"
-                                  value={color.hex.length === 7 ? color.hex : '#000000'}
-                                  onChange={e =>
-                                    handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
-                                  }
-                                  className="w-12 h-12 rounded-xl border border-slate-700 cursor-pointer overflow-hidden opacity-0 absolute inset-0 z-10"
-                                />
-                                <div
-                                  className="w-12 h-12 rounded-xl border border-slate-700 shadow-md flex items-center justify-center"
-                                  style={{ backgroundColor: color.hex }}
-                                >
-                                  <Sliders className="w-4 h-4 text-slate-900/60 drop-shadow" />
+                              <div className="relative shrink-0 flex flex-col items-center gap-1">
+                                <div className="relative w-12 h-12">
+                                  <input
+                                    type="color"
+                                    value={color.hex.length === 7 ? color.hex : '#000000'}
+                                    onChange={e =>
+                                      handleUpdateColor(selectedTeam.id, color.id, 'hex', e.target.value)
+                                    }
+                                    className="w-full h-full rounded-xl border border-slate-700 cursor-pointer overflow-hidden opacity-0 absolute inset-0 z-10"
+                                  />
+                                  <div
+                                    className="w-full h-full rounded-xl border border-slate-700 shadow-md flex items-center justify-center transition-all duration-300"
+                                    style={simulateFinish(color.hex, colorFinishes[color.id] || 'flat')}
+                                  >
+                                    <Sliders className="w-4 h-4 text-slate-900/60 drop-shadow" />
+                                  </div>
                                 </div>
+                                {(colorFinishes[color.id] === 'matte' || colorFinishes[color.id] === 'metallic') && (
+                                  <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    {colorFinishes[color.id]} Preview
+                                  </span>
+                                )}
                               </div>
 
                               {/* Editable Name & Hex input */}
@@ -1642,6 +2140,28 @@
                                     </button>
                                   )}
                                 </div>
+
+                                {/* Finish Toggle Group */}
+                                <div className="flex items-center gap-1 mt-1">
+                                  {['flat', 'matte', 'metallic'].map(finish => {
+                                    const isSelected = (colorFinishes[color.id] || 'flat') === finish;
+                                    return (
+                                      <button
+                                        key={finish}
+                                        onClick={() => setColorFinishes(prev => ({ ...prev, [color.id]: finish }))}
+                                        className={`min-h-[44px] flex-1 text-[10px] font-bold rounded px-1.5 py-1 border transition capitalize ${
+                                          isSelected
+                                            ? 'bg-slate-700 border-slate-600 text-white'
+                                            : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                                        }`}
+                                      >
+                                        {finish}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Role Toggles */}
                                 <div className="flex items-center gap-1 mt-1.5">
                                   {['primary', 'secondary', 'accent', 'neutral'].map(role => {
                                     const isActive = color.role === role;
@@ -1651,7 +2171,7 @@
                                       <button
                                         key={role}
                                         onClick={() => handleUpdateColor(selectedTeam.id, color.id, 'role', isActive ? null : role)}
-                                        className={`flex-1 text-[10px] font-bold rounded px-1 py-0.5 border transition ${isActive ? 'border-transparent' : 'border-slate-800 hover:border-slate-600 bg-slate-900 text-slate-500'}`}
+                                        className={`min-h-[44px] flex-1 text-[10px] font-bold rounded px-1 py-0.5 border transition ${isActive ? 'border-transparent' : 'border-slate-800 hover:border-slate-600 bg-slate-900 text-slate-500'}`}
                                         style={isActive ? { backgroundColor: color.hex, color: getBestTextColor(color.hex) } : {}}
                                       >
                                         <span className="sm:hidden">{labelAbbr}</span>
@@ -1759,6 +2279,26 @@
                     </div>
                   </div>
 
+                  {/* Palette Mood Profile Section */}
+                  <div className="space-y-4 pt-4 border-t border-slate-800">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-cyan-400" />
+                        Palette Mood Profile
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        A visual fingerprint of the palette's characteristics across 5 perceptual dimensions.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex justify-center items-center">
+                      <ColorMoodChart
+                        colors={selectedTeam.colors}
+                        dominantHex={getColorByRole(selectedTeam, 'dominant', 0)?.hex || '#00CAFF'}
+                      />
+                    </div>
+                  </div>
+
                   {/* Per-Team Export / Import Panels */}
                   <div className="space-y-4 pt-4 border-t border-slate-800">
                     <div className="flex flex-col sm:flex-row gap-4">
@@ -1846,6 +2386,130 @@
                         )}
                       </div>
                     </div>
+
+                    {/* Version History / Snapshots Panel */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-800 transition group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <History className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300 transition" />
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-white tracking-wide">Version History</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                              {(snapshots[selectedTeam.id] || []).length} Saved
+                            </span>
+                          </div>
+                        </div>
+                        {isHistoryExpanded ? <ChevronUp className="w-5 h-5 text-slate-500" /> : <ChevronDown className="w-5 h-5 text-slate-500" />}
+                      </button>
+
+                      {isHistoryExpanded && (
+                        <div className="border-t border-slate-800 bg-slate-950 p-4 space-y-6">
+                          {/* Save Snapshot Form */}
+                          <div className="flex flex-col sm:flex-row gap-3 bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <div className="flex-1 space-y-2">
+                              <input
+                                type="text"
+                                value={newSnapshotName}
+                                onChange={e => setNewSnapshotName(e.target.value)}
+                                placeholder="Snapshot name (e.g., Draft 2)"
+                                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-slate-600"
+                              />
+                              <input
+                                type="text"
+                                value={newSnapshotNotes}
+                                onChange={e => setNewSnapshotNotes(e.target.value)}
+                                placeholder="Notes (optional)"
+                                className="w-full bg-transparent border-none px-1 text-xs text-slate-400 focus:outline-none placeholder-slate-600 italic"
+                              />
+                            </div>
+                            <div className="flex items-start sm:items-stretch">
+                              <button
+                                onClick={() => {
+                                  const updated = saveSnapshot(selectedTeam.id, newSnapshotName, newSnapshotNotes, selectedTeam.colors);
+                                  setSnapshots(updated);
+                                  setNewSnapshotName('');
+                                  setNewSnapshotNotes('');
+                                  setToastMessage("Snapshot saved successfully.");
+                                  setTimeout(() => setToastMessage(null), 2500);
+                                }}
+                                className="flex-1 sm:flex-none h-full flex flex-col items-center justify-center gap-1 bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-6 py-2 rounded-lg transition shadow-md shadow-indigo-500/20"
+                              >
+                                <Save className="w-4 h-4" />
+                                <span className="text-xs">Save Current</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* List of Snapshots */}
+                          <div className="space-y-3">
+                            {(snapshots[selectedTeam.id] || []).length === 0 ? (
+                              <div className="text-center py-6 text-slate-500 text-sm italic">
+                                No snapshots saved yet. Save one above!
+                              </div>
+                            ) : (
+                              (snapshots[selectedTeam.id] || []).map((snap, idx) => (
+                                <div key={snap.id} className="group flex flex-col sm:flex-row gap-4 p-3 bg-slate-900 rounded-xl border border-slate-800 hover:border-slate-700 transition relative">
+                                  {/* Snapshot Details */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h4 className="text-sm font-bold text-white truncate" title={snap.name}>{snap.name}</h4>
+                                      <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {new Date(snap.timestamp).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    {snap.notes && (
+                                      <p className="text-xs text-slate-400 italic truncate group-hover:whitespace-normal group-hover:break-words">
+                                        {snap.notes}
+                                      </p>
+                                    )}
+                                    {/* Color Strip Preview */}
+                                    <div className="flex h-3 mt-2 rounded overflow-hidden opacity-80 group-hover:opacity-100 transition">
+                                      {snap.colors.map((c, i) => (
+                                        <div key={`preview-${i}`} style={{ backgroundColor: c.hex, flex: 1 }} />
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Actions */}
+                                  <div className="flex sm:flex-col justify-end gap-2 shrink-0">
+                                    <button
+                                      onClick={() => {
+                                        if(window.confirm("Restore this snapshot? Current colors will be overwritten.")) {
+                                          setTeams(prevTeams => prevTeams.map(t =>
+                                            t.id === selectedTeam.id ? { ...t, colors: JSON.parse(JSON.stringify(snap.colors)) } : t
+                                          ));
+                                          setToastMessage(`Restored: ${snap.name}`);
+                                          setTimeout(() => setToastMessage(null), 2500);
+                                        }
+                                      }}
+                                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500/50 rounded-lg text-xs font-bold transition"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5" /> Restore
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (window.confirm("Are you sure you want to delete this snapshot?")) {
+                                          const updated = deleteSnapshot(selectedTeam.id, snap.id);
+                                          setSnapshots(updated);
+                                        }
+                                      }}
+                                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 border border-transparent rounded-lg text-xs transition"
+                                      title="Delete snapshot"
+                                    >
+                                      <Trash className="w-3.5 h-3.5" /> Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Vibe Flagged Detail Block */}
@@ -1881,6 +2545,38 @@
                               </div>
                             </div>
                           ))}
+                        </div>
+
+                        <div className="pt-4 border-t border-amber-500/30">
+                          <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">Desaturation Suggestions</h4>
+                          <div className="space-y-2">
+                            {getDesaturationSuggestions(vibe.flagged).map((sugg, idx) => (
+                              <div key={`sugg-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-5 h-5 rounded-md border border-slate-700 shrink-0" style={{ backgroundColor: sugg.originalColor.hex }} />
+                                  <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" />
+                                  <div className="w-5 h-5 rounded-md border border-slate-700 shrink-0" style={{ backgroundColor: sugg.suggestedHex }} />
+                                  <div className="flex flex-col ml-1">
+                                    <span className="text-[11px] font-mono text-emerald-400">{sugg.suggestedHex}</span>
+                                    <span className="text-[10px] text-slate-400">
+                                      <span className="text-white font-medium">{sugg.originalColor.name}</span> — reduce saturation from {sugg.originalSaturation}% to {sugg.targetSaturation}%
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    handleUpdateColor(selectedTeam.id, sugg.originalColor.id, 'hex', sugg.suggestedHex);
+                                    setToastMessage("Suggestion applied");
+                                    setTimeout(() => setToastMessage(null), 2500);
+                                  }}
+                                  className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg transition"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Apply
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     );
@@ -2108,7 +2804,7 @@
                       <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Primary vs Secondary</div>
                         <div className="text-2xl font-light text-white mb-1">{bgRatio.toFixed(2)}:1</div>
-                        <div className={`text-xs font-bold uppercase ${bgGradeColor}`}>{bgGrade}</div>
+                        <div className={`min-h-[44px] text-xs font-bold uppercase ${bgGradeColor}`}>{bgGrade}</div>
                       </div>
                       <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Primary Text</div>
@@ -2136,7 +2832,7 @@
                       </div>
                       <button
                         onClick={() => setEndzoneShowAccent(!endzoneShowAccent)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                        className={`min-h-[44px] px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                           endzoneShowAccent
                             ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50'
                             : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
@@ -2222,7 +2918,7 @@
 
                       <button
                         onClick={() => setSpectrumFrictionOnly(!spectrumFrictionOnly)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
+                        className={`min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
                           spectrumFrictionOnly
                             ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
                             : 'bg-slate-950 text-slate-400 border-slate-700 hover:text-white hover:border-slate-600'
@@ -2264,7 +2960,7 @@
                       <button
                         key={grp}
                         onClick={() => setSpectrumGroupFilter(grp)}
-                        className={`px-3 py-1 rounded-lg transition whitespace-nowrap ${
+                        className={`min-h-[44px] px-3 py-1 rounded-lg transition whitespace-nowrap ${
                           spectrumGroupFilter === grp
                             ? 'bg-cyan-500 text-slate-950 font-bold'
                             : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -2548,7 +3244,7 @@
                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden sm:flex">
                               <button
                                 onClick={handleToggleLink}
-                                className={`p-2 rounded-full border ${satLinked ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                                className={`min-h-[44px] p-2 rounded-full border ${satLinked ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                                 title={satLinked ? 'Unlink' : 'Link'}
                               >
                                 {satLinked ? <Link2 className="w-4 h-4" /> : <Link2Off className="w-4 h-4" />}
@@ -2578,7 +3274,7 @@
                              <div className="flex justify-center sm:hidden">
                                <button
                                   onClick={handleToggleLink}
-                                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold uppercase ${satLinked ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                                  className={`min-h-[44px] flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold uppercase ${satLinked ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                                 >
                                   {satLinked ? <Link2 className="w-3.5 h-3.5" /> : <Link2Off className="w-3.5 h-3.5" />}
                                   {satLinked ? 'Linked' : 'Unlinked'}
@@ -2622,7 +3318,7 @@
                             <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Adjusted Contrast</div>
                             <div className="text-2xl font-light text-white">{adjContrast.toFixed(2)}:1</div>
                           </div>
-                          <div className={`text-sm font-bold uppercase px-4 py-1.5 rounded-lg border ${adjGradeColor} ${adjContrast >= 4.5 ? 'border-green-500/30 bg-green-500/10' : (adjContrast >= 3.0 ? 'border-amber-500/30 bg-amber-500/10' : 'border-red-500/30 bg-red-500/10')}`}>
+                          <div className={`min-h-[44px] text-sm font-bold uppercase px-4 py-1.5 rounded-lg border ${adjGradeColor} ${adjContrast >= 4.5 ? 'border-green-500/30 bg-green-500/10' : (adjContrast >= 3.0 ? 'border-amber-500/30 bg-amber-500/10' : 'border-red-500/30 bg-red-500/10')}`}>
                             {adjGrade}
                           </div>
                         </div>
@@ -2633,6 +3329,171 @@
                 </div>
               </div>
             )}
+
+
+            {/* ================= TAB: CONFLICT MATRIX ================= */}
+            {activeTab === 'matrix' && (() => {
+
+
+
+              const getBgColorClass = (dist) => {
+                if (dist < 20) return 'bg-red-500/70';
+                if (dist < 35) return 'bg-amber-400/50';
+                if (dist < 55) return 'bg-yellow-300/20';
+                return 'bg-slate-800';
+              };
+
+              const getLabel = (dist) => {
+                if (dist < 20) return 'Conflict';
+                if (dist < 35) return 'Watch';
+                if (dist < 55) return 'Similar';
+                return 'Distinct';
+              };
+
+              const getAbbr = (name) => {
+                const words = (name || "").split(' ').filter(w => w.length > 0);
+                if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
+                let abbr = '';
+                for (let i = 0; i < words.length && abbr.length < 3; i++) {
+                  abbr += words[i][0].toUpperCase();
+                }
+                return abbr;
+              };
+
+              return (
+                <div className="space-y-6">
+                  {/* Summary Bar & Controls */}
+                  <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-500/20 text-red-400 rounded-lg">
+                        <Grid className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-white">League Conflict Matrix</h2>
+                        <p className="text-sm text-slate-400">
+                          <span className={conflictPairs.length > 0 ? "text-red-400 font-semibold" : "text-emerald-400 font-semibold"}>
+                            {conflictPairs.length}
+                          </span> of {(matrixTeams.length * (matrixTeams.length - 1)) / 2} team pairs are in the conflict zone (distance &lt; 20).
+                          Review highlighted pairs before broadcast scheduling.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-slate-400 font-medium mr-2">Sort Order:</span>
+                      <button
+                        onClick={() => setMatrixSortOrder('alphabetical')}
+                        className={`min-h-[44px] px-3 py-1.5 rounded-lg border transition ${matrixSortOrder === 'alphabetical' ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800'}`}
+                      >
+                        Alphabetical
+                      </button>
+                      <button
+                        onClick={() => setMatrixSortOrder('hue')}
+                        className={`min-h-[44px] px-3 py-1.5 rounded-lg border transition ${matrixSortOrder === 'hue' ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800'}`}
+                      >
+                        Hue
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Matrix Grid */}
+                  <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 overflow-x-auto">
+                    <div className="min-w-max">
+                      <div className="flex mb-2">
+                        <div className="w-12 shrink-0"></div>
+                        {matrixTeams.map(t => (
+                          <div key={`col-${t.id}`} className="w-10 flex flex-col items-center justify-end shrink-0" title={t.team}>
+                            <span className="text-[10px] font-bold text-slate-400 -rotate-45 mb-2 transform origin-bottom-left block w-full text-left">{getAbbr(t.team)}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {matrixTeams.map((rowTeam, i) => (
+                        <div key={`row-${rowTeam.id}`} className="flex mb-1">
+                          <div className="w-12 shrink-0 flex items-center justify-end pr-3" title={rowTeam.team}>
+                            <span className="text-xs font-bold text-slate-400">{getAbbr(rowTeam.team)}</span>
+                          </div>
+
+                          {matrixTeams.map((colTeam, j) => {
+                            if (i === j) {
+                              return (
+                                <div key={`cell-${rowTeam.id}-${colTeam.id}`} className="w-10 h-10 shrink-0 mr-1 bg-slate-700 flex items-center justify-center rounded">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: rowTeam.primaryHex }}></div>
+                                </div>
+                              );
+                            }
+
+                            const dist = distances[`${rowTeam.id}-${colTeam.id}`];
+                            const bgClass = getBgColorClass(dist);
+
+                            return (
+                              <div
+                                key={`cell-${rowTeam.id}-${colTeam.id}`}
+                                className={`w-10 h-10 shrink-0 mr-1 rounded group relative flex items-center justify-center ${bgClass} cursor-help border border-transparent hover:border-white/50 transition-colors`}
+                              >
+                                {dist < 20 && <span className="text-white/80 font-bold text-xs">{Math.round(dist)}</span>}
+
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-slate-950 border border-slate-800 p-3 rounded-xl shadow-xl flex flex-col items-center gap-2">
+                                  <div className="text-xs font-semibold text-white">
+                                    {rowTeam.team} vs. {colTeam.team}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <div className="w-8 h-8 rounded" style={{ backgroundColor: rowTeam.primaryHex }}></div>
+                                    <div className="w-8 h-8 rounded" style={{ backgroundColor: colTeam.primaryHex }}></div>
+                                  </div>
+                                  <div className="text-[10px] text-slate-300">
+                                    Distance: <span className="font-mono text-cyan-400">{dist.toFixed(1)}</span> — {getLabel(dist)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Conflict Pair List */}
+                  {conflictPairs.length > 0 && (
+                    <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-4">
+                      <h3 className="text-base font-bold text-white mb-4">Conflict Zone Pairs (Distance &lt; 20)</h3>
+                      <div className="space-y-2">
+                        {conflictPairs.map((pair, idx) => (
+                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-950/50 rounded-xl border border-slate-800 gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-6 h-6 rounded shadow-sm" style={{ backgroundColor: pair.tA.primaryHex }}></div>
+                                <span className="text-sm font-semibold text-white">{pair.tA.team}</span>
+                              </div>
+                              <span className="text-slate-500 text-xs font-bold uppercase">vs</span>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-6 h-6 rounded shadow-sm" style={{ backgroundColor: pair.tB.primaryHex }}></div>
+                                <span className="text-sm font-semibold text-white">{pair.tB.team}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-400 uppercase tracking-wide font-bold">Distance</span>
+                                <span className="px-2 py-1 bg-red-500/20 text-red-400 font-mono text-sm rounded-md font-semibold">{pair.dist.toFixed(1)}</span>
+                              </div>
+                              <button
+                                onClick={() => setSelectedTeamId(pair.tA.id)}
+                                className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold rounded-lg transition"
+                              >
+                                Review {getAbbr(pair.tA.team)}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
 
                         {/* ================= TAB 5: EXPORT ================= */}
             {activeTab === 'export' && (
@@ -2655,13 +3516,13 @@
                       <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
                         <button
                           onClick={() => setExportScope('all')}
-                          className={`px-4 py-1.5 text-xs font-semibold rounded-md transition ${exportScope === 'all' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                          className={`min-h-[44px] px-4 py-1.5 text-xs font-semibold rounded-md transition ${exportScope === 'all' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
                         >
                           All Teams
                         </button>
                         <button
                           onClick={() => setExportScope('single')}
-                          className={`px-4 py-1.5 text-xs font-semibold rounded-md transition ${exportScope === 'single' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                          className={`min-h-[44px] px-4 py-1.5 text-xs font-semibold rounded-md transition ${exportScope === 'single' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
                         >
                           Single Team
                         </button>
@@ -2793,7 +3654,7 @@
                       <div className="flex items-center gap-3">
                         <button
                           onClick={handleCopyImageToClipboard}
-                          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+                          className="min-h-[44px] flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
                         >
                           <Copy className="w-4 h-4 text-cyan-400" />
                           <span>Copy Image</span>
@@ -2801,7 +3662,7 @@
 
                         <button
                           onClick={handleDownloadImage}
-                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
+                          className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
                         >
                           <Download className="w-4 h-4" />
                           <span>Download PNG Image</span>
@@ -2831,7 +3692,7 @@
                             </button>
                             <button
                               onClick={() => setExportTeamScope('single')}
-                              className={`py-2 px-2 text-xs font-semibold rounded-xl border transition ${
+                              className={`min-h-[44px] py-2 px-2 text-xs font-semibold rounded-xl border transition ${
                                 exportTeamScope === 'single'
                                   ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
                                   : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
@@ -2841,7 +3702,7 @@
                             </button>
                             <button
                               onClick={() => setExportTeamScope('custom')}
-                              className={`py-2 px-2 text-xs font-semibold rounded-xl border transition ${
+                              className={`min-h-[44px] py-2 px-2 text-xs font-semibold rounded-xl border transition ${
                                 exportTeamScope === 'custom'
                                   ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
                                   : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
@@ -3064,7 +3925,7 @@
 
                           <button
                             onClick={handleDownloadImage}
-                            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
+                            className="min-h-[44px] shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
                           >
                             <Download className="w-4 h-4" />
                             <span>Save PNG Palette Sheet</span>
