@@ -2893,7 +2893,7 @@ ${breakdownText}`}
             {/* ================= TAB 2: EVALUATE ================= */}
             {activeTab === 'evaluate' && (() => {
               const evaluateTeam = teams.find(t => t.id === evaluateTeamId) || teams[0];
-              const primaryColor = getColorByRole(evaluateTeam, 'primary', 0);
+              const primaryColor = getColorByRole(evaluateTeam, 'dominant', 0);
               const secondaryColor = getColorByRole(evaluateTeam, 'secondary', 1);
               const accentColor = getColorByRole(evaluateTeam, 'accent', 2);
 
