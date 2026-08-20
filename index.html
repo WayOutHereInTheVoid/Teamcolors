@@ -1298,7 +1298,7 @@
       const handleOpenImageExportForTeam = (teamId) => {
         setExportTeamScope('single');
         setExportSingleTeamId(teamId);
-        setActiveTab('export-image');
+        setActiveTab('export');
       };
 
       // --- CANVAS RENDERING ENGINE ---
@@ -1565,9 +1565,9 @@
         exportSubtitle
       ]);
 
-      // Re-render Canvas when activeTab === 'export-image' or settings change
+      // Re-render Canvas when activeTab === 'export' or settings change
       useEffect(() => {
-        if (activeTab === 'export-image') {
+        if (activeTab === 'export') {
           const timer = setTimeout(() => {
             renderExportCanvas();
           }, 60);
