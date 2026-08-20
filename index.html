@@ -60,6 +60,13 @@
       display: flex;
       align-items: center;
     }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+      animation: fadeInUp 0.2s ease-out forwards;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
@@ -943,7 +950,18 @@
 
     // --- MAIN APP COMPONENT ---
     function App() {
-      const [teams, setTeams] = useState(INITIAL_LEAGUE_DATA.teams);
+      const [teams, setTeams] = useState(() => {
+        try {
+          const saved = localStorage.getItem('trl-color-studio-teams');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          }
+        } catch (e) {
+          console.error('Failed to load saved teams', e);
+        }
+        return JSON.parse(JSON.stringify(INITIAL_LEAGUE_DATA.teams));
+      });
       const [activeTab, setActiveTab] = useState('teams'); // 'teams', 'spectrum', 'compare', 'matrix', 'export'
       const [searchQuery, setSearchQuery] = useState('');
       const [selectedTeamId, setSelectedTeamId] = useState(null);
@@ -1036,6 +1054,17 @@
            setOriginalColorsJson(null);
         }
       }, [selectedTeamId]);
+
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          try {
+            localStorage.setItem('trl-color-studio-teams', JSON.stringify(teams));
+          } catch (e) {
+            console.error('Failed to save teams', e);
+          }
+        }, 400);
+        return () => clearTimeout(timer);
+      }, [teams]);
 
       const canvasRef = useRef(null);
 
@@ -1674,14 +1703,14 @@
         <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
           {/* Toast Notification */}
           {toastMessage && (
-            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-cyan-500 text-slate-950 px-4 py-3 rounded-xl shadow-2xl font-semibold border border-cyan-300 animate-bounce">
+            <div className="fixed z-50 flex items-center gap-3 bg-cyan-500 text-slate-950 px-4 py-3 rounded-xl shadow-2xl font-semibold border border-cyan-300 animate-fade-in-up" style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))', right: '1.5rem' }}>
               <CheckCircle2 className="w-5 h-5 shrink-0" />
               <span>{toastMessage}</span>
             </div>
           )}
 
           {/* Header Bar */}
-          <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg">
+          <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3 w-full md:w-auto justify-between">
                 <div className="flex items-center gap-3">
@@ -1709,9 +1738,14 @@
               </div>
 
               {/* Navigation Tabs */}
-              <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 w-full md:w-auto overflow-x-auto whitespace-nowrap">
+              <div className="relative w-full md:w-auto">
+                <div
+                  className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 z-10 rounded-r-xl md:hidden"
+                  style={{ background: 'linear-gradient(to right, transparent, rgba(2,6,23,0.85))' }}
+                />
+                <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 w-full md:w-auto overflow-x-auto whitespace-nowrap">
                 <button
-                  onClick={() => setActiveTab('teams')}
+                  onClick={() => { setActiveTab('teams'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'teams'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
@@ -1723,7 +1757,7 @@
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('evaluate')}
+                  onClick={() => { setActiveTab('evaluate'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'evaluate'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
@@ -1735,7 +1769,7 @@
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('spectrum')}
+                  onClick={() => { setActiveTab('spectrum'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'spectrum'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
@@ -1747,7 +1781,7 @@
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('compare')}
+                  onClick={() => { setActiveTab('compare'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'compare'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
@@ -1760,7 +1794,7 @@
 
 
                 <button
-                  onClick={() => setActiveTab('matrix')}
+                  onClick={() => { setActiveTab('matrix'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'matrix'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
@@ -1773,7 +1807,7 @@
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('export')}
+                  onClick={() => { setActiveTab('export'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className={`min-h-[44px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === 'export'
                       ? 'bg-cyan-500 text-slate-950 font-semibold shadow'
@@ -1783,6 +1817,7 @@
                   <Download className="w-4 h-4" />
                   <span>Export</span>
                 </button>
+                </div>
               </div>
 
               <button
@@ -1962,7 +1997,7 @@ ${breakdownText}`}
                                         e.stopPropagation();
                                         handleCopy(color.hex, 'HEX');
                                       }}
-                                      className="px-2 py-1 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
+                                      className="min-h-[44px] px-3 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
                                       title="Copy HEX"
                                     >
                                       HEX
@@ -1972,7 +2007,7 @@ ${breakdownText}`}
                                         e.stopPropagation();
                                         handleCopy(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'RGB');
                                       }}
-                                      className="px-2 py-1 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
+                                      className="min-h-[44px] px-3 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
                                       title="Copy RGB"
                                     >
                                       RGB
@@ -1982,7 +2017,7 @@ ${breakdownText}`}
                                         e.stopPropagation();
                                         handleCopy(`hsb(${hsb.h}, ${hsb.s}%, ${hsb.b}%)`, 'HSB');
                                       }}
-                                      className="px-2 py-1 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
+                                      className="min-h-[44px] px-3 rounded bg-slate-800 text-[10px] font-mono text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition"
                                       title="Copy HSB"
                                     >
                                       HSB
@@ -2007,23 +2042,23 @@ ${breakdownText}`}
 
             {/* ================= TEAM PALETTE REVIEW & ADJUSTER MODAL ================= */}
             {selectedTeam && (
-              <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-8 my-auto relative">
-                  <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" onClick={() => setSelectedTeamId(null)}>
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-8 my-auto relative" style={{ overscrollBehaviorY: 'contain', maxHeight: 'calc(90vh - env(safe-area-inset-bottom, 0px))' }} onClick={e => e.stopPropagation()}>
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4 border-b border-slate-800 pb-5">
+                    <div className="flex items-start gap-3 w-full">
+                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                         <Shield className="w-6 h-6" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <h2 className="text-2xl font-black text-white tracking-tight">{selectedTeam.team}</h2>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h2 className="text-2xl font-black text-white tracking-tight break-words">{selectedTeam.team}</h2>
                           {isDirty && (
                             <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" /> Unsaved changes
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-400 mt-1">
                           Move & Tune Palette • {selectedTeam.colors.length} Active Swatches
                           {selectedTeam.note && <span className="text-amber-400 ml-2">({selectedTeam.note})</span>}
                         </p>
@@ -2036,15 +2071,15 @@ ${breakdownText}`}
                           else if (phs.total >= 50) badgeColor = 'text-amber-400';
 
                           return (
-                            <div className="flex items-center gap-3 mt-1.5 text-[11px] font-mono">
-                              <span className={`min-h-[44px] font-bold ${badgeColor}`}>{Math.round(phs.total)} PHS Total</span>
-                              <span className="text-slate-600">|</span>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] font-mono">
+                              <span className={`min-h-[44px] flex items-center font-bold ${badgeColor}`}>{Math.round(phs.total)} PHS Total</span>
+                              <span className="text-slate-600 hidden sm:inline">|</span>
                               <span className="text-slate-400">Roles: <span className="text-slate-300">{phs.breakdown.roles}</span></span>
                               <span className="text-slate-600">|</span>
                               <span className="text-slate-400">Vibration: <span className="text-slate-300">{phs.breakdown.vibration}</span></span>
                               <span className="text-slate-600">|</span>
                               <span className="text-slate-400">Contrast: <span className="text-slate-300">{phs.breakdown.contrast}</span></span>
-                              <span className="text-slate-600">|</span>
+                              <span className="text-slate-600 hidden sm:inline">|</span>
                               <span className="text-slate-400">Away: <span className="text-slate-300">{phs.breakdown.away}</span></span>
                             </div>
                           );
@@ -2052,7 +2087,7 @@ ${breakdownText}`}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end">
                       <button
                         onClick={() => handleOpenImageExportForTeam(selectedTeam.id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-semibold border border-cyan-500/30 transition"
@@ -2259,7 +2294,7 @@ ${breakdownText}`}
 
                                 {/* Role Toggles */}
                                 <div className="flex items-center gap-1 mt-1.5">
-                                  {['primary', 'secondary', 'accent', 'neutral'].map(role => {
+                                  {['dominant', 'secondary', 'accent', 'neutral'].map(role => {
                                     const isActive = color.role === role;
                                     const labelFull = role.charAt(0).toUpperCase() + role.slice(1);
                                     const labelAbbr = role.charAt(0).toUpperCase();
@@ -2307,66 +2342,72 @@ ${breakdownText}`}
                                 <div className="flex justify-between text-slate-400 mb-0.5">
                                   <span>Hue ({hsb.h}°)</span>
                                 </div>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="360"
-                                  value={hsb.h}
-                                  onChange={e => {
-                                    const newRgb = hsbToRgb(parseInt(e.target.value), hsb.s, hsb.b);
-                                    handleUpdateColor(
-                                      selectedTeam.id,
-                                      color.id,
-                                      'hex',
-                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
-                                    );
-                                  }}
-                                  className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
-                                />
+                                <div className="ios-slider-wrapper">
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="360"
+                                    value={hsb.h}
+                                    onChange={e => {
+                                      const newRgb = hsbToRgb(parseInt(e.target.value), hsb.s, hsb.b);
+                                      handleUpdateColor(
+                                        selectedTeam.id,
+                                        color.id,
+                                        'hex',
+                                        rgbToHex(newRgb.r, newRgb.g, newRgb.b)
+                                      );
+                                    }}
+                                    className="ios-slider"
+                                  />
+                                </div>
                               </div>
 
                               <div>
                                 <div className="flex justify-between text-slate-400 mb-0.5">
                                   <span>Saturation ({hsb.s}%)</span>
                                 </div>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  value={hsb.s}
-                                  onChange={e => {
-                                    const newRgb = hsbToRgb(hsb.h, parseInt(e.target.value), hsb.b);
-                                    handleUpdateColor(
-                                      selectedTeam.id,
-                                      color.id,
-                                      'hex',
-                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
-                                    );
-                                  }}
-                                  className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
-                                />
+                                <div className="ios-slider-wrapper">
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={hsb.s}
+                                    onChange={e => {
+                                      const newRgb = hsbToRgb(hsb.h, parseInt(e.target.value), hsb.b);
+                                      handleUpdateColor(
+                                        selectedTeam.id,
+                                        color.id,
+                                        'hex',
+                                        rgbToHex(newRgb.r, newRgb.g, newRgb.b)
+                                      );
+                                    }}
+                                    className="ios-slider"
+                                  />
+                                </div>
                               </div>
 
                               <div>
                                 <div className="flex justify-between text-slate-400 mb-0.5">
                                   <span>Brightness ({hsb.b}%)</span>
                                 </div>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  value={hsb.b}
-                                  onChange={e => {
-                                    const newRgb = hsbToRgb(hsb.h, hsb.s, parseInt(e.target.value));
-                                    handleUpdateColor(
-                                      selectedTeam.id,
-                                      color.id,
-                                      'hex',
-                                      rgbToHex(newRgb.r, newRgb.g, newRgb.b)
-                                    );
-                                  }}
-                                  className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer"
-                                />
+                                <div className="ios-slider-wrapper">
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={hsb.b}
+                                    onChange={e => {
+                                      const newRgb = hsbToRgb(hsb.h, hsb.s, parseInt(e.target.value));
+                                      handleUpdateColor(
+                                        selectedTeam.id,
+                                        color.id,
+                                        'hex',
+                                        rgbToHex(newRgb.r, newRgb.g, newRgb.b)
+                                      );
+                                    }}
+                                    className="ios-slider"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
